@@ -1,6 +1,8 @@
 package us.b3k.kafka.ws;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import us.b3k.kafka.ws.consumer.KafkaConsumer;
 import us.b3k.kafka.ws.messages.BinaryMessage;
 import us.b3k.kafka.ws.messages.BinaryMessage.*;
@@ -30,7 +32,7 @@ import java.util.Properties;
     configurator = KafkaWebsocketEndpoint.Configurator.class
 )
 public class KafkaWebsocketEndpoint {
-    private static Logger LOG = Logger.getLogger(KafkaWebsocketEndpoint.class);
+    private static Logger LOG = LoggerFactory.getLogger(KafkaWebsocketEndpoint.class);
 
     private Properties configProps;
     private KafkaConsumer consumer = null;
@@ -104,13 +106,12 @@ public class KafkaWebsocketEndpoint {
         {
             T endpoint = super.getEndpointInstance(endpointClass);
 
-            if (endpoint instanceof KafkaWebsocketEndpoint) { return endpoint; }
-            else
-            {
-                throw new InstantiationException(
-                        MessageFormat.format("Expected instanceof \"{0}\". Got instanceof \"{1}\".",
-                                KafkaWebsocketEndpoint.class, endpoint.getClass()));
+            if (endpoint instanceof KafkaWebsocketEndpoint) {
+                return endpoint;
             }
+            throw new InstantiationException(
+                    MessageFormat.format("Expected instanceof \"{0}\". Got instanceof \"{1}\".",
+                            KafkaWebsocketEndpoint.class, endpoint.getClass()));
         }
     }
 }

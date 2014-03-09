@@ -4,7 +4,8 @@ import kafka.consumer.ConsumerConfig;
 import kafka.consumer.KafkaStream;
 import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.MessageAndMetadata;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import us.b3k.kafka.ws.messages.BinaryMessage;
 import us.b3k.kafka.ws.messages.TextMessage;
 
@@ -12,13 +13,13 @@ import javax.websocket.CloseReason;
 import javax.websocket.RemoteEndpoint.Async;
 import javax.websocket.Session;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class KafkaConsumer {
-    private static Logger LOG = Logger.getLogger(KafkaConsumer.class);
+    private static Logger LOG = LoggerFactory.getLogger(KafkaConsumer.class);
 
     private final ExecutorService executorService = Executors.newCachedThreadPool();
 
@@ -93,19 +94,15 @@ public class KafkaConsumer {
         }
 
         private void sendText(String topic, byte[] message) {
-            try {
-                String messageString = new String(message,"UTF-8");
-                remoteEndpoint.sendObject(new TextMessage(topic, messageString));
-            } catch (UnsupportedEncodingException e) {
-                closeSession(e);
-            }
+            String messageString = new String(message, Charset.forName("UTF-8"));
+            remoteEndpoint.sendObject(new TextMessage(topic, messageString));
         }
 
         private void closeSession(Exception e) {
             try {
                 session.close(new CloseReason(CloseReason.CloseCodes.CLOSED_ABNORMALLY, e.getMessage()));
             } catch (IOException ioe) {
-                ioe.printStackTrace();
+                LOG.error("Error closing session: " + ioe.getMessage());
             }
         }
     }

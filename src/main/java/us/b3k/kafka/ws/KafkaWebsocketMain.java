@@ -1,7 +1,6 @@
 package us.b3k.kafka.ws;
 
 import java.io.FileInputStream;
-import java.io.InputStream;
 import java.util.Properties;
 import org.apache.log4j.PropertyConfigurator;
 

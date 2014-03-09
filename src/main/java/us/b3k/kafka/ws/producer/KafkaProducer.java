@@ -3,13 +3,13 @@ package us.b3k.kafka.ws.producer;
 import kafka.javaapi.producer.Producer;
 import kafka.producer.KeyedMessage;
 import kafka.producer.ProducerConfig;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import javax.websocket.Session;
 import java.util.Properties;
 
 public class KafkaProducer {
-    private static Logger LOG = Logger.getLogger(KafkaProducer.class);
+    private static Logger LOG = LoggerFactory.getLogger(KafkaProducer.class);
 
     private ProducerConfig producerConfig;
     private Producer producer;

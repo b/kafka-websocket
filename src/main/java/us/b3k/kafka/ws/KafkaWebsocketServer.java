@@ -1,6 +1,8 @@
 package us.b3k.kafka.ws;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -12,7 +14,7 @@ import java.io.IOException;
 import java.util.Properties;
 
 public class KafkaWebsocketServer {
-    private static Logger LOG = Logger.getLogger(KafkaWebsocketServer.class);
+    private static Logger LOG = LoggerFactory.getLogger(KafkaWebsocketServer.class);
 
     private static final String DEFAULT_PORT = "8080";
 

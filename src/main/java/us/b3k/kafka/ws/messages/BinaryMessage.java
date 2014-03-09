@@ -1,13 +1,15 @@
 package us.b3k.kafka.ws.messages;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.websocket.*;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 
 public class BinaryMessage {
-    private static Logger LOG = Logger.getLogger(BinaryMessage.class);
+    private static Logger LOG = LoggerFactory.getLogger(BinaryMessage.class);
 
     private String topic;
     private byte[] message;
@@ -47,14 +49,10 @@ public class BinaryMessage {
                 if (byteBuffer.get() == 0) { break; }
                 topicLen++;
             }
-            try {
-                String topic = new String(byteBuffer.array(), 0, topicLen, "UTF-8");
-                ByteBuffer messageBuf = ByteBuffer.allocate(bufLen - topicLen);
-                System.arraycopy(byteBuffer.array(), topicLen + 1, messageBuf.array(), 0, bufLen - topicLen);
-                return new BinaryMessage(topic, messageBuf.array());
-            } catch (UnsupportedEncodingException e) {
-                throw new DecodeException(byteBuffer, e.getMessage(), e.getCause());
-            }
+            String topic = new String(byteBuffer.array(), 0, topicLen, Charset.forName("UTF-8"));
+            ByteBuffer messageBuf = ByteBuffer.allocate(bufLen - topicLen);
+            System.arraycopy(byteBuffer.array(), topicLen + 1, messageBuf.array(), 0, bufLen - topicLen);
+            return new BinaryMessage(topic, messageBuf.array());
         }
 
         @Override

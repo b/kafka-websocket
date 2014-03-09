@@ -2,7 +2,8 @@ package us.b3k.kafka.ws.messages;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.websocket.*;
 
@@ -14,7 +15,7 @@ import javax.websocket.*;
  both attributes are required and any other attributes will be ignored (and lost)
  */
 public class TextMessage {
-    private static Logger LOG = Logger.getLogger(TextMessage.class);
+    private static Logger LOG = LoggerFactory.getLogger(TextMessage.class);
 
     private String topic;
     private String message;
