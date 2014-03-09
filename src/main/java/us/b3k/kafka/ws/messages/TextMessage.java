@@ -42,13 +42,15 @@ public class TextMessage {
     }
 
     static public class TextMessageDecoder implements Decoder.Text<TextMessage> {
+        static public final JsonParser jsonParser = new JsonParser();
+
         public TextMessageDecoder() {
 
         }
 
         @Override
         public TextMessage decode(String s) throws DecodeException {
-            JsonObject jsonObject = new JsonParser().parse(s).getAsJsonObject();
+            JsonObject jsonObject = TextMessageDecoder.jsonParser.parse(s).getAsJsonObject();
             if (jsonObject.has("topic") && jsonObject.has("message")) {
                 String topic = jsonObject.getAsJsonPrimitive("topic").getAsString();
                 String message = jsonObject.getAsJsonPrimitive("message").getAsString();
