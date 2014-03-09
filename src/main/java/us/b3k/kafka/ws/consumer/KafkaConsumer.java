@@ -78,10 +78,10 @@ public class KafkaConsumer {
                 String topic = messageAndMetadata.topic();
                 byte[] message = messageAndMetadata.message();
                 switch(subprotocol) {
-                    case "binary":
+                    case "kafka-binary":
                         sendBinary(topic, message);
                         break;
-                    case "text":
+                    case "kafka-text":
                         sendText(topic, message);
                         break;
                 }
