@@ -96,15 +96,11 @@ public class BinaryMessage {
         public ByteBuffer encode(BinaryMessage binaryMessage) throws EncodeException {
             ByteBuffer buf =
                     ByteBuffer.allocate(binaryMessage.getTopic().length() + 1 + binaryMessage.getMessage().length);
-            try {
-                final byte nullTerm = 0;
-                buf.put(binaryMessage.getTopic().getBytes("UTF-8"))
-                   .put(nullTerm)
-                   .put(binaryMessage.getMessage());
-                return buf;
-            } catch (UnsupportedEncodingException e) {
-                throw new EncodeException(binaryMessage, e.getMessage(), e.getCause());
-            }
+            final byte nullTerm = 0;
+            buf.put(binaryMessage.getTopic().getBytes(Charset.forName("UTF-8")))
+               .put(nullTerm)
+               .put(binaryMessage.getMessage());
+            return buf;
         }
 
         @Override
