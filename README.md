@@ -38,3 +38,7 @@ Text messages are JSON objects with two attributes: topic and message.
 ## Configuration
 
 See property files in conf/
+
+## License
+
+kafka-websocket is copyright 2014 Benjamin Black, and distributed under the Apache License 2.0.
