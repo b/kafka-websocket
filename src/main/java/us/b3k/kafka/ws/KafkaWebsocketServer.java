@@ -1,0 +1,57 @@
+package us.b3k.kafka.ws;
+
+import org.apache.log4j.Logger;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+
+import javax.websocket.DeploymentException;
+import javax.websocket.server.ServerContainer;
+import java.io.IOException;
+import java.util.Properties;
+
+public class KafkaWebsocketServer {
+    private static Logger LOG = Logger.getLogger(KafkaWebsocketServer.class);
+
+    private static final String DEFAULT_PORT = "8080";
+
+    private final Properties wsProps;
+    private final Properties consumerProps;
+    private final Properties producerProps;
+
+    public KafkaWebsocketServer(Properties wsProps, Properties consumerProps, Properties producerProps) {
+        this.wsProps = wsProps;
+        this.consumerProps = consumerProps;
+        this.producerProps = producerProps;
+    }
+
+    public void run() {
+        try {
+            Server server = new Server();
+            ServerConnector connector = new ServerConnector(server);
+            connector.setPort(Integer.parseInt(wsProps.getProperty("ws.port", DEFAULT_PORT)));
+            server.addConnector(connector);
+            ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+            context.setContextPath("/");
+            server.setHandler(context);
+
+            ServerContainer wscontainer = WebSocketServerContainerInitializer.configureContext(context);
+            KafkaWebsocketEndpoint.Configurator.setKafkaProps(consumerProps, producerProps);
+            wscontainer.addEndpoint(KafkaWebsocketEndpoint.class);
+
+            server.start();
+            //server.dump(System.err);
+            server.join();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (DeploymentException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
