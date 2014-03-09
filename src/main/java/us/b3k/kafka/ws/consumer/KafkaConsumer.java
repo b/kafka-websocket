@@ -46,8 +46,12 @@ public class KafkaConsumer {
     private Async remoteEndpoint;
 
     public KafkaConsumer(Properties configProps, Session session) {
-        this.consumerConfig = new ConsumerConfig(configProps);
+        String groupId = configProps.getProperty("group.id");
+        groupId = groupId + "-" + String.valueOf(System.currentTimeMillis());
+        configProps.setProperty("group.id", groupId);
+
         this.remoteEndpoint = session.getAsyncRemote();
+        this.consumerConfig = new ConsumerConfig(configProps);
         String topicString = session.getPathParameters().get("topics");
         this.topics = Arrays.asList(topicString.split(","));
         this.session = session;

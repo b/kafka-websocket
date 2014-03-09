@@ -64,7 +64,7 @@ public class KafkaWebsocketEndpoint {
         LOG.debug("Opening new session...");
         if (!topics.isEmpty()) {
             LOG.debug("    topics are " + topics);
-            consumer = new KafkaConsumer(Configurator.getConsumerProps(), session);
+            consumer = new KafkaConsumer((Properties) Configurator.getConsumerProps().clone(), session);
             consumer.start();
         }
     }
