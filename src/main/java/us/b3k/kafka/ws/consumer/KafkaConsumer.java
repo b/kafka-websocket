@@ -54,7 +54,7 @@ public class KafkaConsumer {
     }
 
     public void start() {
-        LOG.debug("Starting new consumer");
+        LOG.debug("Starting consumer for {}", session.getId());
         this.connector = kafka.consumer.Consumer.createJavaConsumerConnector(consumerConfig);
 
         Map<String, Integer> topicCountMap = new HashMap<>();
@@ -64,7 +64,7 @@ public class KafkaConsumer {
         Map<String, List<KafkaStream<byte[], byte[]>>> consumerMap = connector. createMessageStreams(topicCountMap);
 
         for (String topic : topics) {
-            LOG.debug("    adding consumer for topic " + topic);
+            LOG.debug("Adding stream for session {}, topic {}",session.getId(), topic);
             final List<KafkaStream<byte[], byte[]>> streams = consumerMap.get(topic);
             for (KafkaStream<byte[], byte[]> stream : streams) {
                 executorService.submit(new KafkaConsumerTask(stream, remoteEndpoint, session));
@@ -73,6 +73,7 @@ public class KafkaConsumer {
     }
 
     public void stop() {
+        LOG.debug("Stopping consumer for session {}", session.getId());
         connector.commitOffsets();
         try {
             Thread.sleep(5000);
@@ -80,11 +81,14 @@ public class KafkaConsumer {
             LOG.error("Exception while waiting to shutdown consumer: {}", ie.getMessage());
         }
         if (connector != null) {
+            LOG.trace("Shutting down connector for session {}", session.getId());
             connector.shutdown();
         }
         if (executorService != null) {
+            LOG.trace("Shutting down executor for session {}", session.getId());
             executorService.shutdown();
         }
+        LOG.debug("Stopped consumer for session {}", session.getId());
     }
 
     static public class KafkaConsumerTask implements Runnable {
@@ -126,10 +130,11 @@ public class KafkaConsumer {
         }
 
         private void closeSession(Exception e) {
+            LOG.debug("Consumer initiated close of session {}", session.getId());
             try {
                 session.close(new CloseReason(CloseReason.CloseCodes.CLOSED_ABNORMALLY, e.getMessage()));
             } catch (IOException ioe) {
-                LOG.error("Error closing session: " + ioe.getMessage());
+                LOG.error("Error closing session: {}", ioe.getMessage());
             }
         }
     }

@@ -89,9 +89,9 @@ public class KafkaWebsocketEndpoint {
         sessionProps.setProperty("group.id", groupId);
 
         String topics = session.getPathParameters().get("topics");
-        LOG.debug("Opening new session...");
+        LOG.debug("Opening new session {}", session.getId());
         if (!topics.isEmpty()) {
-            LOG.debug("    topics are " + topics);
+            LOG.debug("Session {} topics are {}", session.getId(), topics);
             consumer = new KafkaConsumer(sessionProps, session);
             consumer.start();
         }
@@ -106,14 +106,14 @@ public class KafkaWebsocketEndpoint {
 
     @OnMessage
     public void onMessage(final BinaryMessage message, final Session session) {
-        LOG.debug("Received binary message: topic - " + message.getTopic() + "; message - " + message.getMessage());
+        LOG.trace("Received binary message: topic - {}; message - {}", message.getTopic(), message.getMessage());
         producer().send(message.getTopic(), message.getMessage());
     }
 
     @OnMessage
     public void onMessage(final TextMessage message, final Session session) {
         try {
-            LOG.debug("Received text message: topic - " + message.getTopic() + "; message - " + message.getMessage());
+            LOG.trace("Received text message: topic - {}; message - {}", message.getTopic(), message.getMessage());
             producer().send(message.getTopic(), message.getMessage().getBytes("UTF-8"));
         } catch (UnsupportedEncodingException e) {
             closeSession(session, new CloseReason(CloseReason.CloseCodes.CLOSED_ABNORMALLY, e.getMessage()));
