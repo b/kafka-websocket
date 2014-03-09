@@ -46,10 +46,6 @@ public class KafkaConsumer {
     private Async remoteEndpoint;
 
     public KafkaConsumer(Properties configProps, Session session) {
-        String groupId = configProps.getProperty("group.id");
-        groupId = groupId + "-" + String.valueOf(System.currentTimeMillis());
-        configProps.setProperty("group.id", groupId);
-
         this.remoteEndpoint = session.getAsyncRemote();
         this.consumerConfig = new ConsumerConfig(configProps);
         String topicString = session.getPathParameters().get("topics");
@@ -77,7 +73,18 @@ public class KafkaConsumer {
     }
 
     public void stop() {
-        executorService.shutdown();
+        connector.commitOffsets();
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException ie) {
+            LOG.error("Exception while waiting to shutdown consumer: {}", ie.getMessage());
+        }
+        if (connector != null) {
+            connector.shutdown();
+        }
+        if (executorService != null) {
+            executorService.shutdown();
+        }
     }
 
     static public class KafkaConsumerTask implements Runnable {
