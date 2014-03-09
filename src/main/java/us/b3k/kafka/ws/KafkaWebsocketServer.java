@@ -54,14 +54,13 @@ public class KafkaWebsocketServer {
             context.setContextPath("/");
             server.setHandler(context);
 
-            ServerContainer wscontainer = WebSocketServerContainerInitializer.configureContext(context);
+            ServerContainer wsContainer = WebSocketServerContainerInitializer.configureContext(context);
             KafkaWebsocketEndpoint.Configurator.setKafkaProps(consumerProps, producerProps);
-            wscontainer.addEndpoint(KafkaWebsocketEndpoint.class);
+            wsContainer.addEndpoint(KafkaWebsocketEndpoint.class);
 
             server.start();
             //server.dump(System.err);
             server.join();
-
         } catch (IOException e) {
             e.printStackTrace();
         } catch (DeploymentException e) {

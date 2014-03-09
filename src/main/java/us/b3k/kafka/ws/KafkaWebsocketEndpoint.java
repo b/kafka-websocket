@@ -16,6 +16,7 @@
 
 package us.b3k.kafka.ws;
 
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +39,8 @@ import javax.websocket.server.ServerEndpointConfig;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.text.MessageFormat;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 @ServerEndpoint(
@@ -53,6 +56,18 @@ public class KafkaWebsocketEndpoint {
     private Properties configProps;
     private KafkaConsumer consumer = null;
 
+    public static Map<String, String> getQueryMap(String query)
+    {
+        String[] params = query.split("&");
+        Map<String, String> map = Maps.newHashMap();
+        for (String param : params)
+        {
+            String[] nameval = param.split("=");
+            map.put(nameval[0], nameval[1]);
+        }
+        return map;
+    }
+
     private KafkaProducer producer() {
         return Configurator.getProducer();
     }
@@ -60,11 +75,24 @@ public class KafkaWebsocketEndpoint {
     @OnOpen
     @SuppressWarnings("unchecked")
     public void onOpen(final Session session) {
+        String groupId;
+
+        Properties sessionProps = (Properties) Configurator.getConsumerProps().clone();
+        Map<String, String> queryParams = KafkaWebsocketEndpoint.getQueryMap(session.getQueryString());
+        if (queryParams.containsKey("group.id")) {
+            groupId = queryParams.get("group.id");
+        } else {
+            groupId = sessionProps.getProperty("group.id") + "-" +
+                                    session.getId() + "-" +
+                                    String.valueOf(System.currentTimeMillis());
+        }
+        sessionProps.setProperty("group.id", groupId);
+
         String topics = session.getPathParameters().get("topics");
         LOG.debug("Opening new session...");
         if (!topics.isEmpty()) {
             LOG.debug("    topics are " + topics);
-            consumer = new KafkaConsumer((Properties) Configurator.getConsumerProps().clone(), session);
+            consumer = new KafkaConsumer(sessionProps, session);
             consumer.start();
         }
     }
