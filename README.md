@@ -16,6 +16,9 @@ where topics is a comma-separated list of topic names. If no topics are given, t
 The format of messages sent to clients is determined by the subprotocol negotiated: kafka-text or kafka-binary. If no
 subprotocol is specified, kafka-text is used.
 
+By default, a new, unique group.id is generated per session. The group.id for a consumer can be controlled by passing a
+group.id as a query param: ?group.id=my_group_id
+
 ## Producing to topics
 
 Clients publish to topics by connecting to /v1/topics/ and sending either text or binary messages that include a topic
