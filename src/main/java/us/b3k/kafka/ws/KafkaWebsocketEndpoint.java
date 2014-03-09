@@ -52,7 +52,10 @@ public class KafkaWebsocketEndpoint {
 
     private Properties configProps;
     private KafkaConsumer consumer = null;
-    private KafkaProducer producer = null;
+
+    private KafkaProducer producer() {
+        return Configurator.getProducer();
+    }
 
     @OnOpen
     @SuppressWarnings("unchecked")
@@ -64,9 +67,6 @@ public class KafkaWebsocketEndpoint {
             consumer = new KafkaConsumer(Configurator.getConsumerProps(), session);
             consumer.start();
         }
-
-        producer = new KafkaProducer(Configurator.getProducerProps());
-        producer.start();
     }
 
     @OnClose
@@ -74,23 +74,19 @@ public class KafkaWebsocketEndpoint {
         if (consumer != null) {
             consumer.stop();
         }
-
-        if (producer != null) {
-            producer.stop();
-        }
     }
 
     @OnMessage
     public void onMessage(final BinaryMessage message, final Session session) {
         LOG.debug("Received binary message: topic - " + message.getTopic() + "; message - " + message.getMessage());
-        producer.send(message.getTopic(), message.getMessage());
+        producer().send(message.getTopic(), message.getMessage());
     }
 
     @OnMessage
     public void onMessage(final TextMessage message, final Session session) {
         try {
             LOG.debug("Received text message: topic - " + message.getTopic() + "; message - " + message.getMessage());
-            producer.send(message.getTopic(), message.getMessage().getBytes("UTF-8"));
+            producer().send(message.getTopic(), message.getMessage().getBytes("UTF-8"));
         } catch (UnsupportedEncodingException e) {
             closeSession(session, new CloseReason(CloseReason.CloseCodes.CLOSED_ABNORMALLY, e.getMessage()));
         }
@@ -108,14 +104,28 @@ public class KafkaWebsocketEndpoint {
     {
         private static Properties consumerProps;
         private static Properties producerProps;
+        private static KafkaProducer producer = null;
 
         public static void setKafkaProps(Properties consumerProps, Properties producerProps) {
             Configurator.consumerProps = consumerProps;
             Configurator.producerProps = producerProps;
         }
 
-        public static Properties getConsumerProps() { return Configurator.consumerProps; }
-        public static Properties getProducerProps() { return Configurator.producerProps; }
+        public static Properties getConsumerProps() {
+            return Configurator.consumerProps;
+        }
+
+        public static Properties getProducerProps() {
+            return Configurator.producerProps;
+        }
+
+        public static KafkaProducer getProducer() {
+            if (producer == null) {
+                producer = new KafkaProducer(producerProps);
+                producer.start();
+            }
+            return producer;
+        }
 
         @Override
         public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException
