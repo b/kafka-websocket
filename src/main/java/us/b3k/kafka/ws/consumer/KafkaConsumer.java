@@ -61,7 +61,7 @@ public class KafkaConsumer {
         for (String topic : topics) {
             topicCountMap.put(topic, 1);
         }
-        Map<String, List<KafkaStream<byte[], byte[]>>> consumerMap = connector. createMessageStreams(topicCountMap);
+        Map<String, List<KafkaStream<byte[], byte[]>>> consumerMap = connector.createMessageStreams(topicCountMap);
 
         for (String topic : topics) {
             LOG.debug("Adding stream for session {}, topic {}",session.getId(), topic);
