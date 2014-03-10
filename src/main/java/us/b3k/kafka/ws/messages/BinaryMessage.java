@@ -59,15 +59,10 @@ public class BinaryMessage {
         @Override
         public BinaryMessage decode(ByteBuffer byteBuffer) throws DecodeException {
             int bufLen = byteBuffer.array().length;
-            int topicLen = 0;
-            while (topicLen < bufLen)
-            {
-                if (byteBuffer.get() == 0) { break; }
-                topicLen++;
-            }
-            String topic = new String(byteBuffer.array(), 0, topicLen, Charset.forName("UTF-8"));
-            ByteBuffer messageBuf = ByteBuffer.allocate(bufLen - topicLen);
-            System.arraycopy(byteBuffer.array(), topicLen + 1, messageBuf.array(), 0, bufLen - topicLen);
+            int topicLen = byteBuffer.get(0);
+            String topic = new String(byteBuffer.array(), 1, topicLen, Charset.forName("UTF-8"));
+            ByteBuffer messageBuf = ByteBuffer.allocate(bufLen - topicLen - 1);
+            System.arraycopy(byteBuffer.array(), topicLen + 1, messageBuf.array(), 0, bufLen - topicLen - 1);
             return new BinaryMessage(topic, messageBuf.array());
         }
 
@@ -95,10 +90,9 @@ public class BinaryMessage {
         @Override
         public ByteBuffer encode(BinaryMessage binaryMessage) throws EncodeException {
             ByteBuffer buf =
-                    ByteBuffer.allocate(binaryMessage.getTopic().length() + 1 + binaryMessage.getMessage().length);
-            final byte nullTerm = 0;
-            buf.put(binaryMessage.getTopic().getBytes(Charset.forName("UTF-8")))
-               .put(nullTerm)
+                    ByteBuffer.allocate(binaryMessage.getTopic().length() + binaryMessage.getMessage().length + 1);
+            buf.put((byte)binaryMessage.getTopic().length())
+               .put(binaryMessage.getTopic().getBytes(Charset.forName("UTF-8")))
                .put(binaryMessage.getMessage());
             return buf;
         }

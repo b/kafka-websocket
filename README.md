@@ -28,9 +28,7 @@ and a message. A client need not subscribe to a topic to publish to it.
 
 Binary messages are formatted as:
 
-[null terminated topic name string][message]
-
-This will likely change in the near future.
+[topic name length byte][topic name bytes (UTF-8)][message bytes]
 
 ## Text messages
 
