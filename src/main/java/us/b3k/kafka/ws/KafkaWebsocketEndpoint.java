@@ -38,8 +38,8 @@ import javax.websocket.server.ServerEndpointConfig;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.text.MessageFormat;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -112,12 +112,8 @@ public class KafkaWebsocketEndpoint {
 
     @OnMessage
     public void onMessage(final TextMessage message, final Session session) {
-        try {
-            LOG.trace("Received text message: topic - {}; message - {}", message.getTopic(), message.getMessage());
-            producer().send(message.getTopic(), message.getMessage().getBytes("UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            closeSession(session, new CloseReason(CloseReason.CloseCodes.CLOSED_ABNORMALLY, e.getMessage()));
-        }
+        LOG.trace("Received text message: topic - {}; message - {}", message.getTopic(), message.getMessage());
+        producer().send(message.getTopic(), message.getMessage().getBytes(Charset.forName("UTF-8")));
     }
 
     private void closeSession(Session session, CloseReason reason) {
