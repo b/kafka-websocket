@@ -58,12 +58,13 @@ public class KafkaWebsocketEndpoint {
 
     public static Map<String, String> getQueryMap(String query)
     {
-        String[] params = query.split("&");
         Map<String, String> map = Maps.newHashMap();
-        for (String param : params)
-        {
-            String[] nameval = param.split("=");
-            map.put(nameval[0], nameval[1]);
+        if (query != null) {
+            String[] params = query.split("&");
+            for (String param : params) {
+                String[] nameval = param.split("=");
+                map.put(nameval[0], nameval[1]);
+            }
         }
         return map;
     }
