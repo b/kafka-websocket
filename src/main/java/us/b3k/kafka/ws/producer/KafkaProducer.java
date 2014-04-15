@@ -21,7 +21,9 @@ import kafka.producer.KeyedMessage;
 import kafka.producer.ProducerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import us.b3k.kafka.ws.messages.TextMessage;
 
+import java.nio.charset.Charset;
 import java.util.Properties;
 
 public class KafkaProducer {
@@ -42,9 +44,23 @@ public class KafkaProducer {
         producer.close();
     }
 
+    public void send(TextMessage message) {
+        if (message.isKeyed()) {
+            send(message.getTopic(), message.getKey(), message.getMessage().getBytes(Charset.forName("UTF-8")));
+        } else {
+            send(message.getTopic(), message.getMessage().getBytes(Charset.forName("UTF-8")));
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public void send(String topic, byte[] message) {
         final KeyedMessage<byte[], byte[]> keyedMessage = new KeyedMessage<>(topic, message);
+        producer.send(keyedMessage);
+    }
+
+    @SuppressWarnings("unchecked")
+    public void send(String topic, String key, byte[] message) {
+        final KeyedMessage<String, byte[]> keyedMessage = new KeyedMessage<>(topic, key, message);
         producer.send(keyedMessage);
     }
 }

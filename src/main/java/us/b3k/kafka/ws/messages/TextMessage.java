@@ -26,19 +26,31 @@ import javax.websocket.*;
 /*
  text messages are JSON strings of the form
 
- {"topic": "my_topic", "message": "my amazing message" }
+ {"topic" : "my_topic", "key" : "my_key123", "message" : "my amazing message" }
 
- both attributes are required and any other attributes will be ignored (and lost)
+ topic and message attributes are required, key is optional. any other attributes will
+ be ignored (and lost)
  */
 public class TextMessage {
     private static Logger LOG = LoggerFactory.getLogger(TextMessage.class);
 
     private String topic;
+    private String key = "";
     private String message;
 
     public TextMessage(String topic, String message) {
         this.topic = topic;
         this.message = message;
+    }
+
+    public TextMessage(String topic, String key, String message) {
+        this.topic = topic;
+        this.key = key;
+        this.message = message;
+    }
+
+    public boolean isKeyed() {
+        return !key.isEmpty();
     }
 
     public String getTopic() {
@@ -47,6 +59,14 @@ public class TextMessage {
 
     public void setTopic(String topic) {
         this.topic = topic;
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
     }
 
     public String getMessage() {
@@ -71,7 +91,13 @@ public class TextMessage {
                 String topic = jsonObject.getAsJsonPrimitive("topic").getAsString();
                 String message = jsonObject.getAsJsonPrimitive("message").getAsString();
 
-                return new TextMessage(topic, message);
+                if (jsonObject.has("key")) {
+                    String key = jsonObject.getAsJsonPrimitive("key").getAsString();
+                    return new TextMessage(topic,key, message);
+
+                } else {
+                    return new TextMessage(topic, message);
+                }
             } else {
                 throw new DecodeException(s, "Missing required fields");
             }
@@ -102,6 +128,9 @@ public class TextMessage {
         public String encode(TextMessage textMessage) throws EncodeException {
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty("topic", textMessage.getTopic());
+            if (textMessage.isKeyed()) {
+                jsonObject.addProperty("key", textMessage.getKey());
+            }
             jsonObject.addProperty("message", textMessage.getMessage());
 
             return jsonObject.toString();

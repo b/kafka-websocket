@@ -37,7 +37,6 @@ import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.Map;
@@ -113,8 +112,9 @@ public class KafkaWebsocketEndpoint {
 
     @OnMessage
     public void onMessage(final TextMessage message, final Session session) {
-        LOG.trace("Received text message: topic - {}; message - {}", message.getTopic(), message.getMessage());
-        producer().send(message.getTopic(), message.getMessage().getBytes(Charset.forName("UTF-8")));
+        LOG.trace("Received text message: topic - {}; key - {}; message - {}",
+                message.getTopic(), message.getKey(), message.getMessage());
+        producer().send(message);
     }
 
     private void closeSession(Session session, CloseReason reason) {

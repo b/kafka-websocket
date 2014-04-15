@@ -22,7 +22,8 @@ group.id as a query param: ?group.id=my_group_id
 ## Producing to topics
 
 Clients publish to topics by connecting to /v1/topics/ and sending either text or binary messages that include a topic
-and a message. A client need not subscribe to a topic to publish to it.
+and a message. Text messages may optionally include a key to influence the mapping of messages to partitions. A client
+need not subscribe to a topic to publish to it.
 
 ## Binary messages
 
@@ -32,9 +33,12 @@ Binary messages are formatted as:
 
 ## Text messages
 
-Text messages are JSON objects with two attributes: topic and message.
+Text messages are JSON objects with two mandatory attributes: topic and message. They may also include an optional key
+attribute:
 
-{ "topic": "my_topic", "message": "my amazing message" }
+{ "topic" : "my_topic", "message" : "my amazing message" }
+
+{ "topic" : "my_topic", "key" : "my_key123", "message" : "my amazing message" }
 
 ## Configuration
 
