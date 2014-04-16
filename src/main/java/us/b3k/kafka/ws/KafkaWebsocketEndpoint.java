@@ -26,6 +26,7 @@ import us.b3k.kafka.ws.messages.BinaryMessage.*;
 import us.b3k.kafka.ws.messages.TextMessage;
 import us.b3k.kafka.ws.messages.TextMessage.*;
 import us.b3k.kafka.ws.producer.KafkaProducer;
+import us.b3k.kafka.ws.transforms.Transform;
 
 import javax.websocket.Session;
 import javax.websocket.OnOpen;
@@ -72,6 +73,14 @@ public class KafkaWebsocketEndpoint {
         return Configurator.getProducer();
     }
 
+    private Transform inputTransform() {
+        return Configurator.getInputTransform();
+    }
+
+    private Transform outputTransform() {
+        return Configurator.getOutputTransform();
+    }
+
     @OnOpen
     @SuppressWarnings("unchecked")
     public void onOpen(final Session session) {
@@ -92,7 +101,7 @@ public class KafkaWebsocketEndpoint {
         LOG.debug("Opening new session {}", session.getId());
         if (!topics.isEmpty()) {
             LOG.debug("Session {} topics are {}", session.getId(), topics);
-            consumer = new KafkaConsumer(sessionProps, session);
+            consumer = new KafkaConsumer(sessionProps, Configurator.getOutputTransform(), session);
             consumer.start();
         }
     }
@@ -107,14 +116,16 @@ public class KafkaWebsocketEndpoint {
     @OnMessage
     public void onMessage(final BinaryMessage message, final Session session) {
         LOG.trace("Received binary message: topic - {}; message - {}", message.getTopic(), message.getMessage());
-        producer().send(message.getTopic(), message.getMessage());
+        BinaryMessage transformedMessage = inputTransform().transform(message, session);
+        producer().send(transformedMessage.getTopic(), transformedMessage.getMessage());
     }
 
     @OnMessage
     public void onMessage(final TextMessage message, final Session session) {
         LOG.trace("Received text message: topic - {}; key - {}; message - {}",
                 message.getTopic(), message.getKey(), message.getMessage());
-        producer().send(message);
+        TextMessage transformedMessage = inputTransform().transform(message, session);
+        producer().send(transformedMessage);
     }
 
     private void closeSession(Session session, CloseReason reason) {
@@ -129,11 +140,31 @@ public class KafkaWebsocketEndpoint {
     {
         private static Properties consumerProps;
         private static Properties producerProps;
+        private static Transform inputTransform;
+        private static Transform outputTransform;
         private static KafkaProducer producer = null;
 
         public static void setKafkaProps(Properties consumerProps, Properties producerProps) {
             Configurator.consumerProps = consumerProps;
             Configurator.producerProps = producerProps;
+        }
+
+        public static void setInputTransformClass(Class transformClass) throws IllegalAccessException, InstantiationException {
+            Configurator.inputTransform = (Transform)transformClass.newInstance();
+            Configurator.inputTransform.initialize();
+        }
+
+        public static Transform getInputTransform() {
+            return Configurator.inputTransform;
+        }
+
+        public static void setOutputTransformClass(Class transformClass) throws IllegalAccessException, InstantiationException {
+            Configurator.outputTransform = (Transform)transformClass.newInstance();
+            Configurator.outputTransform.initialize();
+        }
+
+        public static Transform getOutputTransform() {
+            return Configurator.outputTransform;
         }
 
         public static Properties getConsumerProps() {

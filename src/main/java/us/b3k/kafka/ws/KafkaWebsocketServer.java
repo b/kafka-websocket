@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import us.b3k.kafka.ws.transforms.Transform;
 
 import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerContainer;
@@ -56,6 +57,13 @@ public class KafkaWebsocketServer {
 
             ServerContainer wsContainer = WebSocketServerContainerInitializer.configureContext(context);
             KafkaWebsocketEndpoint.Configurator.setKafkaProps(consumerProps, producerProps);
+            String inputTransformClassName =
+                    wsProps.getProperty("ws.inputTransformClass", "us.b3k.kafka.ws.transforms.Transform");
+            String outputTransformClassName =
+                    wsProps.getProperty("ws.outputTransformClass", "us.b3k.kafka.ws.transforms.Transform");
+            KafkaWebsocketEndpoint.Configurator.setInputTransformClass(Class.forName(inputTransformClassName));
+            KafkaWebsocketEndpoint.Configurator.setOutputTransformClass(Class.forName(outputTransformClassName));
+
             wsContainer.addEndpoint(KafkaWebsocketEndpoint.class);
 
             server.start();

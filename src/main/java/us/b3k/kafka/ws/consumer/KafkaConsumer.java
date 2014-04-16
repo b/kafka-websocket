@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import us.b3k.kafka.ws.messages.BinaryMessage;
 import us.b3k.kafka.ws.messages.TextMessage;
+import us.b3k.kafka.ws.transforms.Transform;
 
 import javax.websocket.CloseReason;
 import javax.websocket.RemoteEndpoint.Async;
@@ -39,17 +40,19 @@ public class KafkaConsumer {
 
     private final ExecutorService executorService = Executors.newCachedThreadPool();
 
-    private Session session;
-    private ConsumerConfig consumerConfig;
+    private final Transform transform;
+    private final Session session;
+    private final ConsumerConfig consumerConfig;
     private ConsumerConnector connector;
-    private List<String> topics;
-    private Async remoteEndpoint;
+    private final List<String> topics;
+    private final Async remoteEndpoint;
 
-    public KafkaConsumer(Properties configProps, Session session) {
+    public KafkaConsumer(Properties configProps, final Transform transform, final Session session) {
         this.remoteEndpoint = session.getAsyncRemote();
         this.consumerConfig = new ConsumerConfig(configProps);
         String topicString = session.getPathParameters().get("topics");
         this.topics = Arrays.asList(topicString.split(","));
+        this.transform = transform;
         this.session = session;
     }
 
@@ -67,7 +70,7 @@ public class KafkaConsumer {
             LOG.debug("Adding stream for session {}, topic {}",session.getId(), topic);
             final List<KafkaStream<byte[], byte[]>> streams = consumerMap.get(topic);
             for (KafkaStream<byte[], byte[]> stream : streams) {
-                executorService.submit(new KafkaConsumerTask(stream, remoteEndpoint, session));
+                executorService.submit(new KafkaConsumerTask(stream, remoteEndpoint, transform, session));
             }
         }
     }
@@ -94,11 +97,14 @@ public class KafkaConsumer {
     static public class KafkaConsumerTask implements Runnable {
         private KafkaStream stream;
         private Async remoteEndpoint;
-        private Session session;
+        private final Transform transform;
+        private final Session session;
 
-        public KafkaConsumerTask(KafkaStream stream, Async remoteEndpoint, Session session) {
+        public KafkaConsumerTask(KafkaStream stream, Async remoteEndpoint,
+                                 final Transform transform, final Session session) {
             this.stream = stream;
             this.remoteEndpoint = remoteEndpoint;
+            this.transform = transform;
             this.session = session;
         }
 
@@ -121,12 +127,12 @@ public class KafkaConsumer {
         }
 
         private void sendBinary(String topic, byte[] message) {
-            remoteEndpoint.sendObject(new BinaryMessage(topic, message));
+            remoteEndpoint.sendObject(transform.transform(new BinaryMessage(topic, message), session));
         }
 
         private void sendText(String topic, byte[] message) {
             String messageString = new String(message, Charset.forName("UTF-8"));
-            remoteEndpoint.sendObject(new TextMessage(topic, messageString));
+            remoteEndpoint.sendObject(transform.transform(new TextMessage(topic, messageString), session));
         }
 
         private void closeSession(Exception e) {

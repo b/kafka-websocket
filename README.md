@@ -25,6 +25,17 @@ Clients publish to topics by connecting to /v1/topics/ and sending either text o
 and a message. Text messages may optionally include a key to influence the mapping of messages to partitions. A client
 need not subscribe to a topic to publish to it.
 
+## Message transforms
+
+By default, kafka-websocket will pass messages to and from kafka as is. If your application requires altering messages
+in transit, for example to add a timestamp field to the body, you can implement a custom transform class. Transforms
+extend us.b3k.kafka.ws.transforms.Transform and can override the initialize methods, or the transform methods for text
+and binary messages.
+
+Transforms can be applied to messages received from clients before they are sent to kafka (inputTransform) or to
+messages received from kafka before they are sent to clients (outputTransform). See conf/server.properties for an
+example of configuring the transform class.
+
 ## Binary messages
 
 Binary messages are formatted as:
