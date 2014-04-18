@@ -47,11 +47,10 @@ public class KafkaConsumer {
     private final List<String> topics;
     private final Async remoteEndpoint;
 
-    public KafkaConsumer(Properties configProps, final Transform transform, final Session session) {
+    public KafkaConsumer(Properties configProps, final String topics, final Transform transform, final Session session) {
         this.remoteEndpoint = session.getAsyncRemote();
         this.consumerConfig = new ConsumerConfig(configProps);
-        String topicString = session.getPathParameters().get("topics");
-        this.topics = Arrays.asList(topicString.split(","));
+        this.topics = Arrays.asList(topics.split(","));
         this.transform = transform;
         this.session = session;
     }

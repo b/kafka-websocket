@@ -8,20 +8,19 @@ A client may produce and consume messages on the same connection.
 
 ## Consuming from topics
 
-Clients subscribe to topics by specifying them in the path used when connecting to kafka-websocket. The path is:
+Clients subscribe to topics by specifying them in a query parameter when connecting to kafka-websocket:
 
-/v1/topics/{topics}
+/v2/broker/?topics=my_topic,my_other_topic
 
-where topics is a comma-separated list of topic names. If no topics are given, the client will not receive messages.
-The format of messages sent to clients is determined by the subprotocol negotiated: kafka-text or kafka-binary. If no
-subprotocol is specified, kafka-text is used.
+If no topics are given, the client will not receive messages. The format of messages sent to clients is determined by
+the subprotocol negotiated: kafka-text or kafka-binary. If no subprotocol is specified, kafka-text is used.
 
 By default, a new, unique group.id is generated per session. The group.id for a consumer can be controlled by passing a
-group.id as a query param: ?group.id=my_group_id
+group.id as an additional query parameter: ?group.id=my_group_id
 
 ## Producing to topics
 
-Clients publish to topics by connecting to /v1/topics/ and sending either text or binary messages that include a topic
+Clients publish to topics by connecting to /v2/broker/ and sending either text or binary messages that include a topic
 and a message. Text messages may optionally include a key to influence the mapping of messages to partitions. A client
 need not subscribe to a topic to publish to it.
 

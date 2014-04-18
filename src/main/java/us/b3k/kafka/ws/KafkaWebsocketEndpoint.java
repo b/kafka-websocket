@@ -38,13 +38,12 @@ import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.Map;
 import java.util.Properties;
 
 @ServerEndpoint(
-    value = "/v1/topics/{topics}",
+    value = "/v2/broker/",
     subprotocols = {"kafka-text", "kafka-binary"},
     decoders = {BinaryMessageDecoder.class, TextMessageDecoder.class},
     encoders = {BinaryMessageEncoder.class, TextMessageEncoder.class},
@@ -84,7 +83,8 @@ public class KafkaWebsocketEndpoint {
     @OnOpen
     @SuppressWarnings("unchecked")
     public void onOpen(final Session session) {
-        String groupId;
+        String groupId = "";
+        String topics = "";
 
         Properties sessionProps = (Properties) Configurator.getConsumerProps().clone();
         Map<String, String> queryParams = KafkaWebsocketEndpoint.getQueryMap(session.getQueryString());
@@ -97,11 +97,11 @@ public class KafkaWebsocketEndpoint {
         }
         sessionProps.setProperty("group.id", groupId);
 
-        String topics = session.getPathParameters().get("topics");
         LOG.debug("Opening new session {}", session.getId());
-        if (!topics.isEmpty()) {
+        if (queryParams.containsKey("topics")) {
+            topics = queryParams.get("topics");
             LOG.debug("Session {} topics are {}", session.getId(), topics);
-            consumer = new KafkaConsumer(sessionProps, Configurator.getOutputTransform(), session);
+            consumer = new KafkaConsumer(sessionProps, topics, Configurator.getOutputTransform(), session);
             consumer.start();
         }
     }
