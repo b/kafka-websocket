@@ -131,6 +131,7 @@ public class KafkaConsumer {
 
         private void sendText(String topic, byte[] message) {
             String messageString = new String(message, Charset.forName("UTF-8"));
+            LOG.trace("XXX Sending text message to remote endpoint: {} {}", topic, messageString);
             remoteEndpoint.sendObject(transform.transform(new TextMessage(topic, messageString), session));
         }
 

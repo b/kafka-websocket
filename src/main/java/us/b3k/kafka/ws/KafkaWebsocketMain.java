@@ -19,8 +19,12 @@ package us.b3k.kafka.ws;
 import java.io.FileInputStream;
 import java.util.Properties;
 import org.apache.log4j.PropertyConfigurator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class KafkaWebsocketMain {
+    private static Logger LOG = LoggerFactory.getLogger(KafkaWebsocketMain.class);
+
     private static final String LOG4J_PROPS_PATH = "conf/log4j.properties";
     private static final String SERVER_PROPS_PATH = "conf/server.properties";
     private static final String CONSUMER_PROPS_PATH = "conf/consumer.properties";
@@ -32,7 +36,7 @@ public class KafkaWebsocketMain {
             props.load(new FileInputStream(filename));
             return props;
         } catch (java.io.IOException e) {
-            e.printStackTrace();
+            LOG.error("Failed to load properties from file {}, exiting: {}", filename, e.getMessage());
             System.exit(-1);
         }
         return null;

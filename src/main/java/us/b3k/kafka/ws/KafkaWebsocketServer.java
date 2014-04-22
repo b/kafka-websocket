@@ -16,24 +16,22 @@
 
 package us.b3k.kafka.ws;
 
+import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
-import us.b3k.kafka.ws.transforms.Transform;
 
-import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerContainer;
-import java.io.IOException;
 import java.util.Properties;
 
 public class KafkaWebsocketServer {
     private static Logger LOG = LoggerFactory.getLogger(KafkaWebsocketServer.class);
 
     private static final String DEFAULT_PORT = "8080";
+    private static final String DEFAULT_SSL_PORT = "8443";
 
     private final Properties wsProps;
     private final Properties consumerProps;
@@ -45,12 +43,54 @@ public class KafkaWebsocketServer {
         this.producerProps = producerProps;
     }
 
+    private SslContextFactory newSslContextFactory(String path, String password, String protocols, String ciphers) {
+        SslContextFactory sslContextFactory = new SslContextFactory();
+        sslContextFactory.setKeyStorePath(path);
+        sslContextFactory.setKeyStorePassword(password);
+        sslContextFactory.setKeyManagerPassword(password);
+        sslContextFactory.setTrustStorePath(path);
+        sslContextFactory.setTrustStorePassword(password);
+        sslContextFactory.setIncludeProtocols("TLSv1.2");
+        sslContextFactory.setIncludeCipherSuites(
+                "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384",
+                "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
+                "TLS_ECDHE_RSA_WITH_RC4_128_SHA",
+                "TLS_RSA_WITH_AES_256_CBC_SHA");
+        return sslContextFactory;
+    }
+
     public void run() {
         try {
             Server server = new Server();
             ServerConnector connector = new ServerConnector(server);
             connector.setPort(Integer.parseInt(wsProps.getProperty("ws.port", DEFAULT_PORT)));
             server.addConnector(connector);
+
+            if(Boolean.valueOf(wsProps.getProperty("ws.ssl", "false"))) {
+                Integer securePort = Integer.parseInt(wsProps.getProperty("ws.ssl.port", DEFAULT_SSL_PORT));
+                HttpConfiguration https = new HttpConfiguration();
+                https.setSecureScheme("https");
+                https.setSecurePort(securePort);
+                https.setOutputBufferSize(32768);
+                https.setRequestHeaderSize(8192);
+                https.setResponseHeaderSize(8192);
+                https.setSendServerVersion(true);
+                https.setSendDateHeader(false);
+                https.addCustomizer(new SecureRequestCustomizer());
+
+                SslContextFactory sslContextFactory =
+                        newSslContextFactory(wsProps.getProperty("ws.ssl.keyStorePath"),
+                                             wsProps.getProperty("ws.ssl.keyStorePassword"),
+                                             wsProps.getProperty("ws.ssl.protocols"),
+                                             wsProps.getProperty("ws.ssl.ciphers"));
+                ServerConnector sslConnector =
+                        new ServerConnector(server,
+                            new SslConnectionFactory(sslContextFactory, "HTTP/1.1"), new HttpConnectionFactory(https));
+                sslConnector.setPort(securePort);
+
+                server.addConnector(sslConnector);
+            }
+
             ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
             context.setContextPath("/");
             server.setHandler(context);
@@ -67,16 +107,9 @@ public class KafkaWebsocketServer {
             wsContainer.addEndpoint(KafkaWebsocketEndpoint.class);
 
             server.start();
-            //server.dump(System.err);
             server.join();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (DeploymentException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("Failed to start the server: {}", e.getMessage());
         }
     }
 }
