@@ -54,7 +54,7 @@ public class KafkaProducer {
 
     @SuppressWarnings("unchecked")
     public void send(String topic, byte[] message) {
-        final KeyedMessage<byte[], byte[]> keyedMessage = new KeyedMessage<>(topic, message);
+        final KeyedMessage<String, byte[]> keyedMessage = new KeyedMessage<>(topic, message);
         producer.send(keyedMessage);
     }
 
