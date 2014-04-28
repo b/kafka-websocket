@@ -46,18 +46,24 @@ public class KafkaWebsocketServer {
     }
 
     private SslContextFactory newSslContextFactory() {
-        String path = wsProps.getProperty("ws.ssl.keyStorePath");
-        String password = wsProps.getProperty("ws.ssl.keyStorePassword");
+        String keyStorePath = wsProps.getProperty("ws.ssl.keyStorePath");
+        String keyStorePassword = wsProps.getProperty("ws.ssl.keyStorePassword");
+        String trustStorePath = wsProps.getProperty("ws.ssl.trustStorePath", keyStorePath);
+        String trustStorePassword = wsProps.getProperty("ws.ssl.trustStorePassword", keyStorePassword);
         String[] protocols = wsProps.getProperty("ws.ssl.protocols", DEFAULT_PROTOCOLS).split(",");
         String[] ciphers = wsProps.getProperty("ws.ssl.ciphers", DEFAULT_CIPHERS).split(",");
+        Boolean clientAuth = Boolean.parseBoolean(wsProps.getProperty("ws.ssl.clientAuth", "false"));
+
         SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath(path);
-        sslContextFactory.setKeyStorePassword(password);
-        sslContextFactory.setKeyManagerPassword(password);
-        sslContextFactory.setTrustStorePath(path);
-        sslContextFactory.setTrustStorePassword(password);
+        sslContextFactory.setKeyStorePath(keyStorePath);
+        sslContextFactory.setKeyStorePassword(keyStorePassword);
+        sslContextFactory.setKeyManagerPassword(keyStorePassword);
+        sslContextFactory.setTrustStorePath(trustStorePath);
+        sslContextFactory.setTrustStorePassword(trustStorePassword);
         sslContextFactory.setIncludeProtocols(protocols);
         sslContextFactory.setIncludeCipherSuites(ciphers);
+        sslContextFactory.setNeedClientAuth(clientAuth);
+        sslContextFactory.setValidatePeerCerts(clientAuth);
         return sslContextFactory;
     }
 
@@ -88,7 +94,7 @@ public class KafkaWebsocketServer {
             connector.setPort(Integer.parseInt(wsProps.getProperty("ws.port", DEFAULT_PORT)));
             server.addConnector(connector);
 
-            if(Boolean.valueOf(wsProps.getProperty("ws.ssl", "false"))) {
+            if(Boolean.parseBoolean(wsProps.getProperty("ws.ssl", "false"))) {
                 server.addConnector(newSslServerConnector(server));
             }
 
