@@ -46,13 +46,14 @@ public class KafkaWebsocketServer {
     }
 
     private SslContextFactory newSslContextFactory() {
+        LOG.info("Configuring TLS.");
         String keyStorePath = wsProps.getProperty("ws.ssl.keyStorePath");
         String keyStorePassword = wsProps.getProperty("ws.ssl.keyStorePassword");
         String trustStorePath = wsProps.getProperty("ws.ssl.trustStorePath", keyStorePath);
         String trustStorePassword = wsProps.getProperty("ws.ssl.trustStorePassword", keyStorePassword);
         String[] protocols = wsProps.getProperty("ws.ssl.protocols", DEFAULT_PROTOCOLS).split(",");
         String[] ciphers = wsProps.getProperty("ws.ssl.ciphers", DEFAULT_CIPHERS).split(",");
-        Boolean clientAuth = Boolean.parseBoolean(wsProps.getProperty("ws.ssl.clientAuth", "false"));
+        String clientAuth = wsProps.getProperty("ws.ssl.clientAuth", "none");
 
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(keyStorePath);
@@ -62,8 +63,23 @@ public class KafkaWebsocketServer {
         sslContextFactory.setTrustStorePassword(trustStorePassword);
         sslContextFactory.setIncludeProtocols(protocols);
         sslContextFactory.setIncludeCipherSuites(ciphers);
-        sslContextFactory.setNeedClientAuth(clientAuth);
-        sslContextFactory.setValidatePeerCerts(clientAuth);
+        switch(clientAuth) {
+            case "required":
+                LOG.info("Client auth required.");
+                sslContextFactory.setNeedClientAuth(true);
+                sslContextFactory.setValidatePeerCerts(true);
+                break;
+            case "optional":
+                LOG.info("Client auth allowed.");
+                sslContextFactory.setWantClientAuth(true);
+                sslContextFactory.setValidatePeerCerts(true);
+                break;
+            default:
+                LOG.info("Client auth disabled.");
+                sslContextFactory.setNeedClientAuth(false);
+                sslContextFactory.setWantClientAuth(false);
+                sslContextFactory.setValidatePeerCerts(false);
+        }
         return sslContextFactory;
     }
 

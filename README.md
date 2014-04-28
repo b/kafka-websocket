@@ -54,6 +54,12 @@ attribute:
 
 See property files in conf/
 
+## TLS/SSL Transport
+
+kafka-websocket can be configured to support TLS transport between client and server (not from kafka-websocket to kafka). Client certificates
+can also be used, if desired. Client auth can be set to none, optional, or required, each being, I hope, self-explanatory. See
+conf/server.properties for various configuration options.
+
 ## License
 
 kafka-websocket is copyright 2014 Benjamin Black, and distributed under the Apache License 2.0.
