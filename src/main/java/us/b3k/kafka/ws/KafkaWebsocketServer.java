@@ -32,6 +32,8 @@ public class KafkaWebsocketServer {
 
     private static final String DEFAULT_PORT = "8080";
     private static final String DEFAULT_SSL_PORT = "8443";
+    private static final String DEFAULT_PROTOCOLS = "TLSv1.2";
+    private static final String DEFAULT_CIPHERS = "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_RC4_128_SHA,TLS_RSA_WITH_AES_256_CBC_SHA";
 
     private final Properties wsProps;
     private final Properties consumerProps;
@@ -43,20 +45,40 @@ public class KafkaWebsocketServer {
         this.producerProps = producerProps;
     }
 
-    private SslContextFactory newSslContextFactory(String path, String password, String protocols, String ciphers) {
+    private SslContextFactory newSslContextFactory() {
+        String path = wsProps.getProperty("ws.ssl.keyStorePath");
+        String password = wsProps.getProperty("ws.ssl.keyStorePassword");
+        String[] protocols = wsProps.getProperty("ws.ssl.protocols", DEFAULT_PROTOCOLS).split(",");
+        String[] ciphers = wsProps.getProperty("ws.ssl.ciphers", DEFAULT_CIPHERS).split(",");
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(path);
         sslContextFactory.setKeyStorePassword(password);
         sslContextFactory.setKeyManagerPassword(password);
         sslContextFactory.setTrustStorePath(path);
         sslContextFactory.setTrustStorePassword(password);
-        sslContextFactory.setIncludeProtocols("TLSv1.2");
-        sslContextFactory.setIncludeCipherSuites(
-                "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384",
-                "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
-                "TLS_ECDHE_RSA_WITH_RC4_128_SHA",
-                "TLS_RSA_WITH_AES_256_CBC_SHA");
+        sslContextFactory.setIncludeProtocols(protocols);
+        sslContextFactory.setIncludeCipherSuites(ciphers);
         return sslContextFactory;
+    }
+
+    private ServerConnector newSslServerConnector(Server server) {
+        Integer securePort = Integer.parseInt(wsProps.getProperty("ws.ssl.port", DEFAULT_SSL_PORT));
+        HttpConfiguration https = new HttpConfiguration();
+        https.setSecureScheme("https");
+        https.setSecurePort(securePort);
+        https.setOutputBufferSize(32768);
+        https.setRequestHeaderSize(8192);
+        https.setResponseHeaderSize(8192);
+        https.setSendServerVersion(true);
+        https.setSendDateHeader(false);
+        https.addCustomizer(new SecureRequestCustomizer());
+
+        SslContextFactory sslContextFactory = newSslContextFactory();
+        ServerConnector sslConnector =
+                new ServerConnector(server,
+                        new SslConnectionFactory(sslContextFactory, "HTTP/1.1"), new HttpConnectionFactory(https));
+        sslConnector.setPort(securePort);
+        return sslConnector;
     }
 
     public void run() {
@@ -67,28 +89,7 @@ public class KafkaWebsocketServer {
             server.addConnector(connector);
 
             if(Boolean.valueOf(wsProps.getProperty("ws.ssl", "false"))) {
-                Integer securePort = Integer.parseInt(wsProps.getProperty("ws.ssl.port", DEFAULT_SSL_PORT));
-                HttpConfiguration https = new HttpConfiguration();
-                https.setSecureScheme("https");
-                https.setSecurePort(securePort);
-                https.setOutputBufferSize(32768);
-                https.setRequestHeaderSize(8192);
-                https.setResponseHeaderSize(8192);
-                https.setSendServerVersion(true);
-                https.setSendDateHeader(false);
-                https.addCustomizer(new SecureRequestCustomizer());
-
-                SslContextFactory sslContextFactory =
-                        newSslContextFactory(wsProps.getProperty("ws.ssl.keyStorePath"),
-                                             wsProps.getProperty("ws.ssl.keyStorePassword"),
-                                             wsProps.getProperty("ws.ssl.protocols"),
-                                             wsProps.getProperty("ws.ssl.ciphers"));
-                ServerConnector sslConnector =
-                        new ServerConnector(server,
-                            new SslConnectionFactory(sslContextFactory, "HTTP/1.1"), new HttpConnectionFactory(https));
-                sslConnector.setPort(securePort);
-
-                server.addConnector(sslConnector);
+                server.addConnector(newSslServerConnector(server));
             }
 
             ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
