@@ -39,8 +39,7 @@ import java.util.concurrent.TimeUnit;
 public class KafkaConsumer {
     private static Logger LOG = LoggerFactory.getLogger(KafkaConsumer.class);
 
-    private final ExecutorService executorService = Executors.newFixedThreadPool(2);
-
+    private final ExecutorService executorService;
     private final Transform transform;
     private final Session session;
     private final ConsumerConfig consumerConfig;
@@ -48,17 +47,19 @@ public class KafkaConsumer {
     private final List<String> topics;
     private final Async remoteEndpoint;
 
-    public KafkaConsumer(Properties configProps, final Transform transform, final String topics, final Session session) {
+    public KafkaConsumer(Properties configProps, final ExecutorService executorService, final Transform transform, final String topics, final Session session) {
         this.remoteEndpoint = session.getAsyncRemote();
         this.consumerConfig = new ConsumerConfig(configProps);
+        this.executorService = executorService;
         this.topics = Arrays.asList(topics.split(","));
         this.transform = transform;
         this.session = session;
     }
 
-    public KafkaConsumer(ConsumerConfig consumerConfig, final Transform transform, final List<String> topics, final Session session) {
+    public KafkaConsumer(ConsumerConfig consumerConfig, final ExecutorService executorService, final Transform transform, final List<String> topics, final Session session) {
         this.remoteEndpoint = session.getAsyncRemote();
         this.consumerConfig = consumerConfig;
+        this.executorService = executorService;
         this.topics = topics;
         this.transform = transform;
         this.session = session;

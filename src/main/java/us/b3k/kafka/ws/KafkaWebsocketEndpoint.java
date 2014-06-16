@@ -82,7 +82,6 @@ public class KafkaWebsocketEndpoint {
             topics = queryParams.get("topics");
             LOG.debug("Session {} topics are {}", session.getId(), topics);
             consumer = Configurator.CONSUMER_FACTORY.getConsumer(groupId, topics, session);
-            consumer.start();
         }
     }
 

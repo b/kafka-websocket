@@ -7,8 +7,11 @@ import javax.websocket.Session;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class KafkaConsumerFactory {
+    private final ExecutorService executorService = Executors.newCachedThreadPool();
     private final Properties configProps;
     private final Transform outputTransform;
 
@@ -37,6 +40,8 @@ public class KafkaConsumerFactory {
         Properties sessionProps = (Properties)configProps.clone();
         sessionProps.setProperty("group.id", groupId);
 
-        return new KafkaConsumer(new ConsumerConfig(sessionProps), outputTransform, topics, session);
+        KafkaConsumer consumer = new KafkaConsumer(new ConsumerConfig(sessionProps), executorService, outputTransform, topics, session);
+        consumer.start();
+        return consumer;
     }
 }

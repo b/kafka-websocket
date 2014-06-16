@@ -5,20 +5,27 @@ import us.b3k.kafka.ws.transforms.Transform;
 import java.util.Properties;
 
 public class KafkaProducerFactory {
-    private final KafkaProducer producer;
+    private final Properties configProps;
+    private final Transform inputTransform;
+    private KafkaProducer producer;
 
     static public KafkaProducerFactory create(Properties configProps, Class inputTransformClass) throws IllegalAccessException, InstantiationException {
         Transform inputTransform = (Transform)inputTransformClass.newInstance();
         inputTransform.initialize();
-        KafkaProducer producer = new KafkaProducer(configProps, inputTransform);
-        return new KafkaProducerFactory(producer);
+
+        return new KafkaProducerFactory(configProps, inputTransform);
     }
 
-    private KafkaProducerFactory(KafkaProducer producer) {
-        this.producer = producer;
+    private KafkaProducerFactory(Properties configProps, Transform inputTransform) {
+        this.configProps = configProps;
+        this.inputTransform = inputTransform;
     }
 
     public KafkaProducer getProducer() {
+        if (producer == null) {
+            producer = new KafkaProducer(configProps, inputTransform);
+            producer.start();
+        }
         return producer;
     }
 }
