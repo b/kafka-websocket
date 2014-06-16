@@ -16,11 +16,12 @@
 
 package us.b3k.kafka.ws;
 
-import java.io.FileInputStream;
-import java.util.Properties;
 import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.FileInputStream;
+import java.util.Properties;
 
 public class KafkaWebsocketMain {
     private static Logger LOG = LoggerFactory.getLogger(KafkaWebsocketMain.class);

@@ -19,28 +19,23 @@ package us.b3k.kafka.ws;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import us.b3k.kafka.ws.consumer.KafkaConsumer;
+import us.b3k.kafka.ws.consumer.KafkaConsumerFactory;
 import us.b3k.kafka.ws.messages.BinaryMessage;
-import us.b3k.kafka.ws.messages.BinaryMessage.*;
+import us.b3k.kafka.ws.messages.BinaryMessage.BinaryMessageDecoder;
+import us.b3k.kafka.ws.messages.BinaryMessage.BinaryMessageEncoder;
 import us.b3k.kafka.ws.messages.TextMessage;
-import us.b3k.kafka.ws.messages.TextMessage.*;
+import us.b3k.kafka.ws.messages.TextMessage.TextMessageDecoder;
+import us.b3k.kafka.ws.messages.TextMessage.TextMessageEncoder;
 import us.b3k.kafka.ws.producer.KafkaProducer;
-import us.b3k.kafka.ws.transforms.Transform;
+import us.b3k.kafka.ws.producer.KafkaProducerFactory;
 
-import javax.websocket.Session;
-import javax.websocket.OnOpen;
-import javax.websocket.OnMessage;
-import javax.websocket.OnClose;
-import javax.websocket.OnError;
-import javax.websocket.CloseReason;
+import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
-
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Map;
-import java.util.Properties;
 
 @ServerEndpoint(
     value = "/v2/broker/",
@@ -52,7 +47,6 @@ import java.util.Properties;
 public class KafkaWebsocketEndpoint {
     private static Logger LOG = LoggerFactory.getLogger(KafkaWebsocketEndpoint.class);
 
-    private Properties configProps;
     private KafkaConsumer consumer = null;
 
     public static Map<String, String> getQueryMap(String query)
@@ -69,15 +63,7 @@ public class KafkaWebsocketEndpoint {
     }
 
     private KafkaProducer producer() {
-        return Configurator.getProducer();
-    }
-
-    private Transform inputTransform() {
-        return Configurator.getInputTransform();
-    }
-
-    private Transform outputTransform() {
-        return Configurator.getOutputTransform();
+        return Configurator.PRODUCER_FACTORY.getProducer();
     }
 
     @OnOpen
@@ -86,22 +72,16 @@ public class KafkaWebsocketEndpoint {
         String groupId = "";
         String topics = "";
 
-        Properties sessionProps = (Properties) Configurator.getConsumerProps().clone();
-        Map<String, String> queryParams = KafkaWebsocketEndpoint.getQueryMap(session.getQueryString());
+        Map<String, String> queryParams = getQueryMap(session.getQueryString());
         if (queryParams.containsKey("group.id")) {
             groupId = queryParams.get("group.id");
-        } else {
-            groupId = sessionProps.getProperty("group.id") + "-" +
-                                    session.getId() + "-" +
-                                    String.valueOf(System.currentTimeMillis());
         }
-        sessionProps.setProperty("group.id", groupId);
 
         LOG.debug("Opening new session {}", session.getId());
         if (queryParams.containsKey("topics")) {
             topics = queryParams.get("topics");
             LOG.debug("Session {} topics are {}", session.getId(), topics);
-            consumer = new KafkaConsumer(sessionProps, topics, Configurator.getOutputTransform(), session);
+            consumer = Configurator.CONSUMER_FACTORY.getConsumer(groupId, topics, session);
             consumer.start();
         }
     }
@@ -115,17 +95,16 @@ public class KafkaWebsocketEndpoint {
 
     @OnMessage
     public void onMessage(final BinaryMessage message, final Session session) {
-        LOG.trace("Received binary message: topic - {}; message - {}", message.getTopic(), message.getMessage());
-        BinaryMessage transformedMessage = inputTransform().transform(message, session);
-        producer().send(transformedMessage.getTopic(), transformedMessage.getMessage());
+        LOG.trace("Received binary message: topic - {}; message - {}",
+                  message.getTopic(), message.getMessage());
+        producer().send(message, session);
     }
 
     @OnMessage
     public void onMessage(final TextMessage message, final Session session) {
         LOG.trace("Received text message: topic - {}; key - {}; message - {}",
                 message.getTopic(), message.getKey(), message.getMessage());
-        TextMessage transformedMessage = inputTransform().transform(message, session);
-        producer().send(transformedMessage);
+        producer().send(message, session);
     }
 
     private void closeSession(Session session, CloseReason reason) {
@@ -138,50 +117,8 @@ public class KafkaWebsocketEndpoint {
 
     public static class Configurator extends ServerEndpointConfig.Configurator
     {
-        private static Properties consumerProps;
-        private static Properties producerProps;
-        private static Transform inputTransform;
-        private static Transform outputTransform;
-        private static KafkaProducer producer = null;
-
-        public static void setKafkaProps(Properties consumerProps, Properties producerProps) {
-            Configurator.consumerProps = consumerProps;
-            Configurator.producerProps = producerProps;
-        }
-
-        public static void setInputTransformClass(Class transformClass) throws IllegalAccessException, InstantiationException {
-            Configurator.inputTransform = (Transform)transformClass.newInstance();
-            Configurator.inputTransform.initialize();
-        }
-
-        public static Transform getInputTransform() {
-            return Configurator.inputTransform;
-        }
-
-        public static void setOutputTransformClass(Class transformClass) throws IllegalAccessException, InstantiationException {
-            Configurator.outputTransform = (Transform)transformClass.newInstance();
-            Configurator.outputTransform.initialize();
-        }
-
-        public static Transform getOutputTransform() {
-            return Configurator.outputTransform;
-        }
-
-        public static Properties getConsumerProps() {
-            return Configurator.consumerProps;
-        }
-
-        public static Properties getProducerProps() {
-            return Configurator.producerProps;
-        }
-
-        public static KafkaProducer getProducer() {
-            if (producer == null) {
-                producer = new KafkaProducer(producerProps);
-                producer.start();
-            }
-            return producer;
-        }
+        public static KafkaConsumerFactory CONSUMER_FACTORY;
+        public static KafkaProducerFactory PRODUCER_FACTORY;
 
         @Override
         public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException

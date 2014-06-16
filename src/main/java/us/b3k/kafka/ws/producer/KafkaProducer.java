@@ -21,8 +21,11 @@ import kafka.producer.KeyedMessage;
 import kafka.producer.ProducerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import us.b3k.kafka.ws.messages.BinaryMessage;
 import us.b3k.kafka.ws.messages.TextMessage;
+import us.b3k.kafka.ws.transforms.Transform;
 
+import javax.websocket.Session;
 import java.nio.charset.Charset;
 import java.util.Properties;
 
@@ -31,24 +34,39 @@ public class KafkaProducer {
 
     private ProducerConfig producerConfig;
     private Producer producer;
+    private Transform inputTransform;
 
     public KafkaProducer(Properties configProps) {
         this.producerConfig = new ProducerConfig(configProps);
     }
 
+    public KafkaProducer(Properties configProps, Transform inputTransform) {
+        this.producerConfig = new ProducerConfig(configProps);
+        this.inputTransform = inputTransform;
+    }
+
     public void start() {
-        this.producer = new Producer(producerConfig);
+        if (producer == null) {
+            producer = new Producer(producerConfig);
+        }
     }
 
     public void stop() {
         producer.close();
+        producer = null;
     }
 
-    public void send(TextMessage message) {
-        if (message.isKeyed()) {
-            send(message.getTopic(), message.getKey(), message.getMessage().getBytes(Charset.forName("UTF-8")));
+    public void send(final BinaryMessage message, final Session session) {
+        BinaryMessage transformedMessage = inputTransform.transform(message, session);
+        send(transformedMessage.getTopic(), transformedMessage.getMessage());
+    }
+
+    public void send(final TextMessage message, final Session session) {
+        TextMessage transformedMessage = inputTransform.transform(message, session);
+        if (transformedMessage.isKeyed()) {
+            send(transformedMessage.getTopic(), transformedMessage.getKey(), transformedMessage.getMessage().getBytes(Charset.forName("UTF-8")));
         } else {
-            send(message.getTopic(), message.getMessage().getBytes(Charset.forName("UTF-8")));
+            send(transformedMessage.getTopic(), transformedMessage.getMessage().getBytes(Charset.forName("UTF-8")));
         }
     }
 

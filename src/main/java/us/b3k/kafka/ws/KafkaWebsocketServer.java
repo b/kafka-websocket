@@ -17,12 +17,13 @@
 package us.b3k.kafka.ws;
 
 import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import us.b3k.kafka.ws.consumer.KafkaConsumerFactory;
+import us.b3k.kafka.ws.producer.KafkaProducerFactory;
 
 import javax.websocket.server.ServerContainer;
 import java.util.Properties;
@@ -119,13 +120,17 @@ public class KafkaWebsocketServer {
             server.setHandler(context);
 
             ServerContainer wsContainer = WebSocketServerContainerInitializer.configureContext(context);
-            KafkaWebsocketEndpoint.Configurator.setKafkaProps(consumerProps, producerProps);
             String inputTransformClassName =
                     wsProps.getProperty("ws.inputTransformClass", "us.b3k.kafka.ws.transforms.Transform");
             String outputTransformClassName =
                     wsProps.getProperty("ws.outputTransformClass", "us.b3k.kafka.ws.transforms.Transform");
-            KafkaWebsocketEndpoint.Configurator.setInputTransformClass(Class.forName(inputTransformClassName));
-            KafkaWebsocketEndpoint.Configurator.setOutputTransformClass(Class.forName(outputTransformClassName));
+            KafkaConsumerFactory consumerFactory =
+                    KafkaConsumerFactory.create(consumerProps, Class.forName(outputTransformClassName));
+            KafkaProducerFactory producerFactory =
+                    KafkaProducerFactory.create(producerProps, Class.forName(inputTransformClassName));
+
+            KafkaWebsocketEndpoint.Configurator.CONSUMER_FACTORY = consumerFactory;
+            KafkaWebsocketEndpoint.Configurator.PRODUCER_FACTORY = producerFactory;
 
             wsContainer.addEndpoint(KafkaWebsocketEndpoint.class);
 
