@@ -130,7 +130,7 @@ public class KafkaWebsocketServer {
                     KafkaProducerFactory.create(producerProps, Class.forName(inputTransformClassName));
 
             KafkaWebsocketEndpoint.Configurator.CONSUMER_FACTORY = consumerFactory;
-            KafkaWebsocketEndpoint.Configurator.PRODUCER_FACTORY = producerFactory;
+            KafkaWebsocketEndpoint.Configurator.PRODUCER = producerFactory.getProducer();
 
             wsContainer.addEndpoint(KafkaWebsocketEndpoint.class);
 

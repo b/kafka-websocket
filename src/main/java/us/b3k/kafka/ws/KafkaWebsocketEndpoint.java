@@ -63,7 +63,7 @@ public class KafkaWebsocketEndpoint {
     }
 
     private KafkaProducer producer() {
-        return Configurator.PRODUCER_FACTORY.getProducer();
+        return Configurator.PRODUCER;
     }
 
     @OnOpen
@@ -117,7 +117,7 @@ public class KafkaWebsocketEndpoint {
     public static class Configurator extends ServerEndpointConfig.Configurator
     {
         public static KafkaConsumerFactory CONSUMER_FACTORY;
-        public static KafkaProducerFactory PRODUCER_FACTORY;
+        public static KafkaProducer PRODUCER;
 
         @Override
         public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException
