@@ -86,24 +86,13 @@ public class KafkaConsumer {
 
     public void stop() {
         LOG.info("Stopping consumer for session {}", session.getId());
-        if (executorService != null) {
-            LOG.debug("Shutting down executor for session {}", session.getId());
-            executorService.shutdownNow();
-            try {
-                if (!executorService.awaitTermination(1, TimeUnit.SECONDS)) {
-                    LOG.warn("Timed out waiting for executor to exit, this could get messy.");
-                }
-            } catch (InterruptedException e) {
-                LOG.error("Error shutting down executor: {}", e.getMessage());
-            }
-        }
-        connector.commitOffsets();
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException ie) {
-            LOG.error("Exception while waiting to shutdown consumer: {}", ie.getMessage());
-        }
         if (connector != null) {
+            connector.commitOffsets();
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException ie) {
+                LOG.error("Exception while waiting to shutdown consumer: {}", ie.getMessage());
+            }
             LOG.debug("Shutting down connector for session {}", session.getId());
             connector.shutdown();
         }
@@ -135,7 +124,7 @@ public class KafkaConsumer {
                     case "kafka-binary":
                         sendBinary(topic, message);
                         break;
-                    case "kafka-text":
+                    default:
                         sendText(topic, message);
                         break;
                 }
