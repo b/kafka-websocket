@@ -124,7 +124,7 @@ public class KafkaConsumer {
                     case "kafka-binary":
                         sendBinary(topic, message);
                         break;
-                    case "kafka-text":
+                    default:
                         sendText(topic, message);
                         break;
                 }
