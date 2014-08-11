@@ -26,35 +26,27 @@ import us.b3k.kafka.ws.consumer.KafkaConsumerFactory;
 import us.b3k.kafka.ws.producer.KafkaProducerFactory;
 
 import javax.websocket.server.ServerContainer;
-import java.util.Properties;
 
 public class KafkaWebsocketServer {
     private static Logger LOG = LoggerFactory.getLogger(KafkaWebsocketServer.class);
 
-    private static final String DEFAULT_PORT = "8080";
-    private static final String DEFAULT_SSL_PORT = "8443";
-    private static final String DEFAULT_PROTOCOLS = "TLSv1.2";
-    private static final String DEFAULT_CIPHERS = "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_RC4_128_SHA,TLS_RSA_WITH_AES_256_CBC_SHA";
+    private final KafkaWebsocketConfiguration configuration;
 
-    private final Properties wsProps;
-    private final Properties consumerProps;
-    private final Properties producerProps;
-
-    public KafkaWebsocketServer(Properties wsProps, Properties consumerProps, Properties producerProps) {
-        this.wsProps = wsProps;
-        this.consumerProps = consumerProps;
-        this.producerProps = producerProps;
+    public KafkaWebsocketServer(KafkaWebsocketConfiguration configuration) {
+        this.configuration = configuration;
     }
 
     private SslContextFactory newSslContextFactory() {
-        LOG.info("Configuring TLS.");
-        String keyStorePath = wsProps.getProperty("ws.ssl.keyStorePath");
-        String keyStorePassword = wsProps.getProperty("ws.ssl.keyStorePassword");
-        String trustStorePath = wsProps.getProperty("ws.ssl.trustStorePath", keyStorePath);
-        String trustStorePassword = wsProps.getProperty("ws.ssl.trustStorePassword", keyStorePassword);
-        String[] protocols = wsProps.getProperty("ws.ssl.protocols", DEFAULT_PROTOCOLS).split(",");
-        String[] ciphers = wsProps.getProperty("ws.ssl.ciphers", DEFAULT_CIPHERS).split(",");
-        String clientAuth = wsProps.getProperty("ws.ssl.clientAuth", "none");
+        LOG.info("Configuring TLS");
+        KafkaWebsocketConfiguration.SSLConfiguration sslConfig = configuration.getSsl();
+
+        String keyStorePath = sslConfig.getKeyStorePath();
+        String keyStorePassword = sslConfig.getKeyStorePassword();
+        String trustStorePath = sslConfig.getTrustStorePath();
+        String trustStorePassword = sslConfig.getTrustStorePassword();
+        String[] protocols = sslConfig.getProtocols();
+        String[] ciphers = sslConfig.getProtocols();
+        String clientAuth = sslConfig.getClientAuth();
 
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(keyStorePath);
@@ -85,7 +77,7 @@ public class KafkaWebsocketServer {
     }
 
     private ServerConnector newSslServerConnector(Server server) {
-        Integer securePort = Integer.parseInt(wsProps.getProperty("ws.ssl.port", DEFAULT_SSL_PORT));
+        Integer securePort = configuration.getSsl().getPort();
         HttpConfiguration https = new HttpConfiguration();
         https.setSecureScheme("https");
         https.setSecurePort(securePort);
@@ -108,10 +100,10 @@ public class KafkaWebsocketServer {
         try {
             Server server = new Server();
             ServerConnector connector = new ServerConnector(server);
-            connector.setPort(Integer.parseInt(wsProps.getProperty("ws.port", DEFAULT_PORT)));
+            connector.setPort(configuration.getPort());
             server.addConnector(connector);
 
-            if(Boolean.parseBoolean(wsProps.getProperty("ws.ssl", "false"))) {
+            if(configuration.getSsl().isEnabled()) {
                 server.addConnector(newSslServerConnector(server));
             }
 
@@ -120,14 +112,12 @@ public class KafkaWebsocketServer {
             server.setHandler(context);
 
             ServerContainer wsContainer = WebSocketServerContainerInitializer.configureContext(context);
-            String inputTransformClassName =
-                    wsProps.getProperty("ws.inputTransformClass", "us.b3k.kafka.ws.transforms.Transform");
-            String outputTransformClassName =
-                    wsProps.getProperty("ws.outputTransformClass", "us.b3k.kafka.ws.transforms.Transform");
+            String inputTransformClassName = configuration.getInputTransformClass();
+            String outputTransformClassName = configuration.getOutputTransformClass();
             KafkaConsumerFactory consumerFactory =
-                    KafkaConsumerFactory.create(consumerProps, Class.forName(outputTransformClassName));
+                    KafkaConsumerFactory.create(configuration.getConsumer(), Class.forName(outputTransformClassName));
             KafkaProducerFactory producerFactory =
-                    KafkaProducerFactory.create(producerProps, Class.forName(inputTransformClassName));
+                    KafkaProducerFactory.create(configuration.getProducer(), Class.forName(inputTransformClassName));
 
             KafkaWebsocketEndpoint.Configurator.CONSUMER_FACTORY = consumerFactory;
             KafkaWebsocketEndpoint.Configurator.PRODUCER = producerFactory.getProducer();
