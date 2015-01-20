@@ -22,6 +22,7 @@ import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.MessageAndMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import us.b3k.kafka.ws.messages.AbstractMessage;
 import us.b3k.kafka.ws.messages.BinaryMessage;
 import us.b3k.kafka.ws.messages.TextMessage;
 import us.b3k.kafka.ws.transforms.Transform;
@@ -140,13 +141,19 @@ public class KafkaConsumer {
         }
 
         private void sendBinary(String topic, byte[] message) {
-            remoteEndpoint.sendObject(transform.transform(new BinaryMessage(topic, message), session));
+            AbstractMessage msg = transform.transform(new BinaryMessage(topic, message), session);
+            if(!msg.isDiscard()) {
+                remoteEndpoint.sendObject(msg);
+            }
         }
 
         private void sendText(String topic, byte[] message) {
             String messageString = new String(message, Charset.forName("UTF-8"));
             LOG.trace("XXX Sending text message to remote endpoint: {} {}", topic, messageString);
-            remoteEndpoint.sendObject(transform.transform(new TextMessage(topic, messageString), session));
+            AbstractMessage msg = transform.transform(new TextMessage(topic, messageString), session);
+            if(!msg.isDiscard()) {
+                remoteEndpoint.sendObject(msg);
+            }
         }
 
         private void closeSession(Exception e) {
