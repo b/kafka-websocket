@@ -58,7 +58,7 @@ public class KafkaProducer {
     }
 
     private void send(final AbstractMessage message) {
-        if(!message.discard) {
+        if(!message.isDiscard()) {
             if (message.isKeyed()) {
                 send(message.getTopic(), message.getKey(), message.getMessageBytes());
             } else {

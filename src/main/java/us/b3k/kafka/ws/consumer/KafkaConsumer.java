@@ -142,7 +142,7 @@ public class KafkaConsumer {
 
         private void sendBinary(String topic, byte[] message) {
             AbstractMessage msg = transform.transform(new BinaryMessage(topic, message), session);
-            if(!msg.discard) {
+            if(!msg.isDiscard()) {
                 remoteEndpoint.sendObject(msg);
             }
         }
@@ -151,7 +151,7 @@ public class KafkaConsumer {
             String messageString = new String(message, Charset.forName("UTF-8"));
             LOG.trace("XXX Sending text message to remote endpoint: {} {}", topic, messageString);
             AbstractMessage msg = transform.transform(new TextMessage(topic, messageString), session);
-            if(!msg.discard) {
+            if(!msg.isDiscard()) {
                 remoteEndpoint.sendObject(msg);
             }
         }

@@ -9,13 +9,13 @@ import javax.websocket.Session;
 public class DiscardTransform extends Transform {
     @Override
     public AbstractMessage transform(TextMessage message, final Session session) {
-        message.discard = true;
+        message.setDiscard(true);
         return message;
     }
 
     @Override
     public AbstractMessage transform(BinaryMessage message, final Session session) {
-        message.discard = true;
+        message.setDiscard(true);
         return message;
     }
 }
