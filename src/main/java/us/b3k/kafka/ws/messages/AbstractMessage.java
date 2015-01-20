@@ -15,4 +15,6 @@ public abstract class AbstractMessage {
     }
 
     public abstract String getKey();
+
+    public Boolean discard = false;
 }
