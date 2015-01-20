@@ -58,19 +58,23 @@ public class KafkaProducer {
     }
 
     private void send(final AbstractMessage message) {
-        if (message.isKeyed()) {
-            send(message.getTopic(), message.getKey(), message.getMessageBytes());
-        } else {
-            send(message.getTopic(), message.getMessageBytes());
+        if(!message.discard) {
+            if (message.isKeyed()) {
+                send(message.getTopic(), message.getKey(), message.getMessageBytes());
+            } else {
+                send(message.getTopic(), message.getMessageBytes());
+            }
         }
     }
 
     public void send(final BinaryMessage message, final Session session) {
-        send(inputTransform.transform(message, session));
+        AbstractMessage msg = inputTransform.transform(message, session);
+        send(msg);
     }
 
     public void send(final TextMessage message, final Session session) {
-        send(inputTransform.transform(message, session));
+        AbstractMessage msg = inputTransform.transform(message, session);
+        send(msg);
     }
 
     @SuppressWarnings("unchecked")
