@@ -68,13 +68,11 @@ public class KafkaProducer {
     }
 
     public void send(final BinaryMessage message, final Session session) {
-        AbstractMessage msg = inputTransform.transform(message, session);
-        send(msg);
+        send(inputTransform.transform(message, session));
     }
 
     public void send(final TextMessage message, final Session session) {
-        AbstractMessage msg = inputTransform.transform(message, session);
-        send(msg);
+        send(inputTransform.transform(message, session));
     }
 
     @SuppressWarnings("unchecked")
