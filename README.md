@@ -60,6 +60,20 @@ kafka-websocket can be configured to support TLS transport between client and se
 can also be used, if desired. Client auth can be set to none, optional, or required, each being, I hope, self-explanatory. See
 conf/server.properties for various configuration options.
 
+### Docker
+
+Build a [Docker](https://www.docker.com/) image using the source code in the working directory:
+
+```
+docker build -t kafka-websocket .
+```
+
+After the Docker image is finished building, run it with:
+
+```
+docker run -it -p 7080:7080 kafka-websocket
+```
+
 ## License
 
 kafka-websocket is copyright 2014 Benjamin Black, and distributed under the Apache License 2.0.
