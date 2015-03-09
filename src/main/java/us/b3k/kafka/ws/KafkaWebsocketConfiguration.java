@@ -6,7 +6,7 @@ import io.dropwizard.Configuration;
 import java.util.Properties;
 
 public class KafkaWebsocketConfiguration extends Configuration {
-    private static final int DEFAULT_PORT = 8080;
+    private static final int DEFAULT_PORT = 8180;
     private static final int DEFAULT_SSL_PORT = 8443;
     private static final String[] DEFAULT_PROTOCOLS = {"TLSv1.2"};
     private static final String DEFAULT_CIPHERS = "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,TLS_ECDHE_RSA_WITH_RC4_128_SHA,TLS_RSA_WITH_AES_256_CBC_SHA";
@@ -41,9 +41,9 @@ public class KafkaWebsocketConfiguration extends Configuration {
     @JsonProperty
     private SSLConfiguration ssl = new SSLConfiguration();
     @JsonProperty
-    private Properties consumer = new Properties(CONSUMER_DEFAULTS);
+    private Properties consumer;
     @JsonProperty
-    private Properties producer = new Properties(PRODUCER_DEFAULTS);
+    private Properties producer;
 
     public int getPort() {
         return port;
@@ -62,10 +62,16 @@ public class KafkaWebsocketConfiguration extends Configuration {
     }
 
     public Properties getConsumer() {
+        if (consumer == null || consumer.isEmpty()) {
+            return CONSUMER_DEFAULTS;
+        }
         return consumer;
     }
 
     public Properties getProducer() {
+        if (producer == null || producer.isEmpty()) {
+            return PRODUCER_DEFAULTS;
+        }
         return producer;
     }
 

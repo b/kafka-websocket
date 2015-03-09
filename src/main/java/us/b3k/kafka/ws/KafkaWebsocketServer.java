@@ -16,6 +16,7 @@
 
 package us.b3k.kafka.ws;
 
+import io.dropwizard.lifecycle.Managed;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -26,108 +27,133 @@ import us.b3k.kafka.ws.consumer.KafkaConsumerFactory;
 import us.b3k.kafka.ws.producer.KafkaProducerFactory;
 
 import javax.websocket.server.ServerContainer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
-public class KafkaWebsocketServer {
+public class KafkaWebsocketServer implements Managed {
     private static Logger LOG = LoggerFactory.getLogger(KafkaWebsocketServer.class);
 
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+
     private final KafkaWebsocketConfiguration configuration;
+    private final Server server;
 
-    public KafkaWebsocketServer(KafkaWebsocketConfiguration configuration) {
+    private Future serverTask;
+
+    public KafkaWebsocketServer(KafkaWebsocketConfiguration configuration, Server server) {
         this.configuration = configuration;
+        this.server = server;
     }
 
-    private SslContextFactory newSslContextFactory() {
-        LOG.info("Configuring TLS");
-        KafkaWebsocketConfiguration.SSLConfiguration sslConfig = configuration.getSsl();
-
-        String keyStorePath = sslConfig.getKeyStorePath();
-        String keyStorePassword = sslConfig.getKeyStorePassword();
-        String trustStorePath = sslConfig.getTrustStorePath();
-        String trustStorePassword = sslConfig.getTrustStorePassword();
-        String[] protocols = sslConfig.getProtocols();
-        String[] ciphers = sslConfig.getProtocols();
-        String clientAuth = sslConfig.getClientAuth();
-
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath(keyStorePath);
-        sslContextFactory.setKeyStorePassword(keyStorePassword);
-        sslContextFactory.setKeyManagerPassword(keyStorePassword);
-        sslContextFactory.setTrustStorePath(trustStorePath);
-        sslContextFactory.setTrustStorePassword(trustStorePassword);
-        sslContextFactory.setIncludeProtocols(protocols);
-        sslContextFactory.setIncludeCipherSuites(ciphers);
-        switch(clientAuth) {
-            case "required":
-                LOG.info("Client auth required.");
-                sslContextFactory.setNeedClientAuth(true);
-                sslContextFactory.setValidatePeerCerts(true);
-                break;
-            case "optional":
-                LOG.info("Client auth allowed.");
-                sslContextFactory.setWantClientAuth(true);
-                sslContextFactory.setValidatePeerCerts(true);
-                break;
-            default:
-                LOG.info("Client auth disabled.");
-                sslContextFactory.setNeedClientAuth(false);
-                sslContextFactory.setWantClientAuth(false);
-                sslContextFactory.setValidatePeerCerts(false);
-        }
-        return sslContextFactory;
+    @Override
+    public void start() throws Exception {
+        serverTask = executor.submit(new KafkaWebsocketServerTask());
     }
 
-    private ServerConnector newSslServerConnector(Server server) {
-        Integer securePort = configuration.getSsl().getPort();
-        HttpConfiguration https = new HttpConfiguration();
-        https.setSecureScheme("https");
-        https.setSecurePort(securePort);
-        https.setOutputBufferSize(32768);
-        https.setRequestHeaderSize(8192);
-        https.setResponseHeaderSize(8192);
-        https.setSendServerVersion(true);
-        https.setSendDateHeader(false);
-        https.addCustomizer(new SecureRequestCustomizer());
-
-        SslContextFactory sslContextFactory = newSslContextFactory();
-        ServerConnector sslConnector =
-                new ServerConnector(server,
-                        new SslConnectionFactory(sslContextFactory, "HTTP/1.1"), new HttpConnectionFactory(https));
-        sslConnector.setPort(securePort);
-        return sslConnector;
+    @Override
+    public void stop() throws Exception {
+        serverTask.cancel(true);
     }
 
-    public void run() {
-        try {
-            Server server = new Server();
-            ServerConnector connector = new ServerConnector(server);
-            connector.setPort(configuration.getPort());
-            server.addConnector(connector);
+    private class KafkaWebsocketServerTask implements Runnable {
 
-            if(configuration.getSsl().isEnabled()) {
-                server.addConnector(newSslServerConnector(server));
+        private SslContextFactory newSslContextFactory() {
+            LOG.info("Configuring TLS");
+            KafkaWebsocketConfiguration.SSLConfiguration sslConfig = configuration.getSsl();
+
+            String keyStorePath = sslConfig.getKeyStorePath();
+            String keyStorePassword = sslConfig.getKeyStorePassword();
+            String trustStorePath = sslConfig.getTrustStorePath();
+            String trustStorePassword = sslConfig.getTrustStorePassword();
+            String[] protocols = sslConfig.getProtocols();
+            String[] ciphers = sslConfig.getProtocols();
+            String clientAuth = sslConfig.getClientAuth();
+
+            SslContextFactory sslContextFactory = new SslContextFactory();
+            sslContextFactory.setKeyStorePath(keyStorePath);
+            sslContextFactory.setKeyStorePassword(keyStorePassword);
+            sslContextFactory.setKeyManagerPassword(keyStorePassword);
+            sslContextFactory.setTrustStorePath(trustStorePath);
+            sslContextFactory.setTrustStorePassword(trustStorePassword);
+            sslContextFactory.setIncludeProtocols(protocols);
+            sslContextFactory.setIncludeCipherSuites(ciphers);
+            switch(clientAuth) {
+                case "required":
+                    LOG.info("Client auth required.");
+                    sslContextFactory.setNeedClientAuth(true);
+                    sslContextFactory.setValidatePeerCerts(true);
+                    break;
+                case "optional":
+                    LOG.info("Client auth allowed.");
+                    sslContextFactory.setWantClientAuth(true);
+                    sslContextFactory.setValidatePeerCerts(true);
+                    break;
+                default:
+                    LOG.info("Client auth disabled.");
+                    sslContextFactory.setNeedClientAuth(false);
+                    sslContextFactory.setWantClientAuth(false);
+                    sslContextFactory.setValidatePeerCerts(false);
             }
+            return sslContextFactory;
+        }
 
-            ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-            context.setContextPath("/");
-            server.setHandler(context);
+        private ServerConnector newSslServerConnector(Server server) {
+            Integer securePort = configuration.getSsl().getPort();
+            HttpConfiguration https = new HttpConfiguration();
+            https.setSecureScheme("https");
+            https.setSecurePort(securePort);
+            https.setOutputBufferSize(32768);
+            https.setRequestHeaderSize(8192);
+            https.setResponseHeaderSize(8192);
+            https.setSendServerVersion(true);
+            https.setSendDateHeader(false);
+            https.addCustomizer(new SecureRequestCustomizer());
 
-            ServerContainer wsContainer = WebSocketServerContainerInitializer.configureContext(context);
-            String inputTransformClassName = configuration.getInputTransformClass();
-            String outputTransformClassName = configuration.getOutputTransformClass();
-            KafkaConsumerFactory consumerFactory =
-                    KafkaConsumerFactory.create(configuration.getConsumer(), Class.forName(outputTransformClassName));
-            KafkaProducerFactory producerFactory =
-                    KafkaProducerFactory.create(configuration.getProducer(), Class.forName(inputTransformClassName));
+            SslContextFactory sslContextFactory = newSslContextFactory();
+            ServerConnector sslConnector =
+                    new ServerConnector(server,
+                                        new SslConnectionFactory(sslContextFactory, "HTTP/1.1"), new HttpConnectionFactory(https));
+            sslConnector.setPort(securePort);
+            return sslConnector;
+        }
 
-            KafkaWebsocketEndpoint.Configurator.CONSUMER_FACTORY = consumerFactory;
-            KafkaWebsocketEndpoint.Configurator.PRODUCER = producerFactory.getProducer();
+        @Override
+        public void run() {
+            try {
+                /*
+                Server server = new Server();
+                ServerConnector connector = new ServerConnector(server);
+                connector.setPort(configuration.getPort());
+                server.addConnector(connector);
+*/
+                if(configuration.getSsl().isEnabled()) {
+                    server.addConnector(newSslServerConnector(server));
+                }
 
-            wsContainer.addEndpoint(KafkaWebsocketEndpoint.class);
+                ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+                context.setContextPath("/");
+                server.setHandler(context);
 
-            server.start();
-            server.join();
-        } catch (Exception e) {
-            LOG.error("Failed to start the server: {}", e.getMessage());
+                ServerContainer wsContainer = WebSocketServerContainerInitializer.configureContext(context);
+                String inputTransformClassName = configuration.getInputTransformClass();
+                String outputTransformClassName = configuration.getOutputTransformClass();
+                KafkaConsumerFactory consumerFactory =
+                        KafkaConsumerFactory.create(configuration.getConsumer(), Class.forName(outputTransformClassName));
+                KafkaProducerFactory producerFactory =
+                        KafkaProducerFactory.create(configuration.getProducer(), Class.forName(inputTransformClassName));
+
+                KafkaWebsocketEndpoint.Configurator.CONSUMER_FACTORY = consumerFactory;
+                KafkaWebsocketEndpoint.Configurator.PRODUCER = producerFactory.getProducer();
+
+                wsContainer.addEndpoint(KafkaWebsocketEndpoint.class);
+
+                server.start();
+                server.join();
+                LOG.info("Server joined");
+            } catch (Exception e) {
+                LOG.error("Failed to start the server", e);
+            }
         }
     }
 }
