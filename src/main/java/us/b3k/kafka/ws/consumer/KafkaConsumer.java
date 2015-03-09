@@ -33,8 +33,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 public class KafkaConsumer {
     private static Logger LOG = LoggerFactory.getLogger(KafkaConsumer.class);

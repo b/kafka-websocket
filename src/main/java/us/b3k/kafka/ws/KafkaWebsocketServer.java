@@ -23,7 +23,7 @@ import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainer
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import us.b3k.kafka.ws.consumer.KafkaConsumerFactory;
-import us.b3k.kafka.ws.producer.KafkaProducerFactory;
+import us.b3k.kafka.ws.producer.KafkaWebsocketProducerFactory;
 
 import javax.websocket.server.ServerContainer;
 import java.util.Properties;
@@ -126,8 +126,8 @@ public class KafkaWebsocketServer {
                     wsProps.getProperty("ws.outputTransformClass", "us.b3k.kafka.ws.transforms.Transform");
             KafkaConsumerFactory consumerFactory =
                     KafkaConsumerFactory.create(consumerProps, Class.forName(outputTransformClassName));
-            KafkaProducerFactory producerFactory =
-                    KafkaProducerFactory.create(producerProps, Class.forName(inputTransformClassName));
+            KafkaWebsocketProducerFactory producerFactory =
+                    KafkaWebsocketProducerFactory.create(producerProps, Class.forName(inputTransformClassName));
 
             KafkaWebsocketEndpoint.Configurator.CONSUMER_FACTORY = consumerFactory;
             KafkaWebsocketEndpoint.Configurator.PRODUCER = producerFactory.getProducer();

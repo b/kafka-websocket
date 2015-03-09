@@ -16,9 +16,10 @@
 
 package us.b3k.kafka.ws.producer;
 
-import kafka.javaapi.producer.Producer;
-import kafka.producer.KeyedMessage;
-import kafka.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import us.b3k.kafka.ws.messages.BinaryMessage;
@@ -27,27 +28,32 @@ import us.b3k.kafka.ws.transforms.Transform;
 
 import javax.websocket.Session;
 import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
-public class KafkaProducer {
-    private static Logger LOG = LoggerFactory.getLogger(KafkaProducer.class);
+public class KafkaWebsocketProducer {
+    private static Logger LOG = LoggerFactory.getLogger(KafkaWebsocketProducer.class);
 
-    private ProducerConfig producerConfig;
-    private Producer producer;
+    private Map<String, Object> producerConfig;
+    private KafkaProducer producer;
     private Transform inputTransform;
 
-    public KafkaProducer(Properties configProps) {
-        this.producerConfig = new ProducerConfig(configProps);
+    @SuppressWarnings("unchecked")
+    public KafkaWebsocketProducer(Properties configProps) {
+        this.producerConfig = new HashMap<String, Object>((Map)configProps);
     }
 
-    public KafkaProducer(Properties configProps, Transform inputTransform) {
-        this.producerConfig = new ProducerConfig(configProps);
+    @SuppressWarnings("unchecked")
+    public KafkaWebsocketProducer(Properties configProps, Transform inputTransform) {
+        this.producerConfig = new HashMap<String, Object>((Map)configProps);
         this.inputTransform = inputTransform;
     }
 
+    @SuppressWarnings("unchecked")
     public void start() {
         if (producer == null) {
-            producer = new Producer(producerConfig);
+            producer = new KafkaProducer(producerConfig, new StringSerializer(), new ByteArraySerializer());
         }
     }
 
@@ -72,13 +78,13 @@ public class KafkaProducer {
 
     @SuppressWarnings("unchecked")
     public void send(String topic, byte[] message) {
-        final KeyedMessage<String, byte[]> keyedMessage = new KeyedMessage<>(topic, message);
-        producer.send(keyedMessage);
+        final ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, message);
+        producer.send(record);
     }
 
     @SuppressWarnings("unchecked")
     public void send(String topic, String key, byte[] message) {
-        final KeyedMessage<String, byte[]> keyedMessage = new KeyedMessage<>(topic, key, message);
-        producer.send(keyedMessage);
+        final ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, key, message);
+        producer.send(record);
     }
 }

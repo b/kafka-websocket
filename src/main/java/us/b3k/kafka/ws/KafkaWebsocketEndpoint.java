@@ -27,8 +27,7 @@ import us.b3k.kafka.ws.messages.BinaryMessage.BinaryMessageEncoder;
 import us.b3k.kafka.ws.messages.TextMessage;
 import us.b3k.kafka.ws.messages.TextMessage.TextMessageDecoder;
 import us.b3k.kafka.ws.messages.TextMessage.TextMessageEncoder;
-import us.b3k.kafka.ws.producer.KafkaProducer;
-import us.b3k.kafka.ws.producer.KafkaProducerFactory;
+import us.b3k.kafka.ws.producer.KafkaWebsocketProducer;
 
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
@@ -62,7 +61,7 @@ public class KafkaWebsocketEndpoint {
         return map;
     }
 
-    private KafkaProducer producer() {
+    private KafkaWebsocketProducer producer() {
         return Configurator.PRODUCER;
     }
 
@@ -117,7 +116,7 @@ public class KafkaWebsocketEndpoint {
     public static class Configurator extends ServerEndpointConfig.Configurator
     {
         public static KafkaConsumerFactory CONSUMER_FACTORY;
-        public static KafkaProducer PRODUCER;
+        public static KafkaWebsocketProducer PRODUCER;
 
         @Override
         public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException
