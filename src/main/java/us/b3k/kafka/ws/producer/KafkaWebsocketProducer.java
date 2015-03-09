@@ -22,6 +22,7 @@ import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import us.b3k.kafka.ws.messages.AbstractMessage;
 import us.b3k.kafka.ws.messages.BinaryMessage;
 import us.b3k.kafka.ws.messages.TextMessage;
 import us.b3k.kafka.ws.transforms.Transform;
@@ -62,18 +63,22 @@ public class KafkaWebsocketProducer {
         producer = null;
     }
 
+    private void send(final AbstractMessage message) {
+        if(!message.isDiscard()) {
+            if (message.isKeyed()) {
+                send(message.getTopic(), message.getKey(), message.getMessageBytes());
+            } else {
+                send(message.getTopic(), message.getMessageBytes());
+            }
+        }
+    }
+
     public void send(final BinaryMessage message, final Session session) {
-        BinaryMessage transformedMessage = inputTransform.transform(message, session);
-        send(transformedMessage.getTopic(), transformedMessage.getMessage());
+        send(inputTransform.transform(message, session));
     }
 
     public void send(final TextMessage message, final Session session) {
-        TextMessage transformedMessage = inputTransform.transform(message, session);
-        if (transformedMessage.isKeyed()) {
-            send(transformedMessage.getTopic(), transformedMessage.getKey(), transformedMessage.getMessage().getBytes(Charset.forName("UTF-8")));
-        } else {
-            send(transformedMessage.getTopic(), transformedMessage.getMessage().getBytes(Charset.forName("UTF-8")));
-        }
+        send(inputTransform.transform(message, session));
     }
 
     @SuppressWarnings("unchecked")

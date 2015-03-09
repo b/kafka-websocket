@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.websocket.*;
+import java.nio.charset.Charset;
 
 /*
  text messages are JSON strings of the form
@@ -31,10 +32,9 @@ import javax.websocket.*;
  topic and message attributes are required, key is optional. any other attributes will
  be ignored (and lost)
  */
-public class TextMessage {
+public class TextMessage extends AbstractMessage {
     private static Logger LOG = LoggerFactory.getLogger(TextMessage.class);
 
-    private String topic;
     private String key = "";
     private String message;
 
@@ -49,18 +49,17 @@ public class TextMessage {
         this.message = message;
     }
 
-    public boolean isKeyed() {
+    @Override
+    public Boolean isKeyed() {
         return !key.isEmpty();
     }
 
-    public String getTopic() {
-        return topic;
+    @Override
+    public byte[] getMessageBytes() {
+        return message.getBytes(Charset.forName("UTF-8"));
     }
 
-    public void setTopic(String topic) {
-        this.topic = topic;
-    }
-
+    @Override
     public String getKey() {
         return key;
     }

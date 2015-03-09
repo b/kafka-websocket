@@ -23,7 +23,7 @@ import javax.websocket.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
-public class BinaryMessage {
+public class BinaryMessage extends AbstractMessage {
     private static Logger LOG = LoggerFactory.getLogger(BinaryMessage.class);
 
     private String topic;
@@ -42,12 +42,27 @@ public class BinaryMessage {
         this.topic = topic;
     }
 
+    @Override
+    public String getKey() {
+        return "";
+    }
+
     public byte[] getMessage() {
         return message;
     }
 
     public void setMessage(byte[] message) {
         this.message = message;
+    }
+
+    @Override
+    public Boolean isKeyed() {
+        return false;
+    }
+
+    @Override
+    public byte[] getMessageBytes() {
+        return message;
     }
 
     static public class BinaryMessageDecoder implements Decoder.Binary<BinaryMessage> {
