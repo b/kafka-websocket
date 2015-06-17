@@ -1,4 +1,4 @@
-FROM dockerfile/java:openjdk-7-jdk
+FROM java:openjdk-7-jdk
 
 RUN apt-get update && apt-get install -y maven
 
@@ -8,5 +8,5 @@ WORKDIR /opt/kafka-websocket
 
 RUN mvn package
 
-CMD java -jar target/kafka-websocket-0.8.1-SNAPSHOT-shaded.jar
+CMD java -jar target/kafka-websocket-0.8.2-SNAPSHOT-shaded.jar
 
