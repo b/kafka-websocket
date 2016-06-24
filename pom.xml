@@ -6,13 +6,13 @@
 
     <groupId>us.b3k.kafka</groupId>
     <artifactId>kafka-websocket</artifactId>
-    <version>0.8.2-SNAPSHOT</version>
+    <version>0.10.0.0</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <jetty.version>9.1.5.v20140505</jetty.version>
-        <kafka.version>0.8.2.0</kafka.version>
+        <kafka.version>0.10.0.0</kafka.version>
     </properties>
 
     <repositories>
